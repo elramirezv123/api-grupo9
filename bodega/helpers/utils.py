@@ -3,7 +3,10 @@ import hmac
 import hashlib
 import urllib
 
-
+'''
+Este módulo es para las funciones que son transversalmente útiles para
+todos los módulos.
+'''
 
 # https://sites.google.com/site/studyingpython/home/basis/hmac-sha1
 def hashQuery(query):

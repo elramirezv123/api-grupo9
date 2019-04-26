@@ -4,6 +4,10 @@ from .constants import almacenes
 
 # https://www.webforefront.com/django/accessurlparamstemplates.html
 
+'''
+Estas son las vistas que representan los endpoints descritos en nuestra documentación.
+'''
+
 def inventario(request):
     # Este es un ejemplo, aún no está listo.
     sku = request.GET.get('sku', '')
@@ -32,7 +36,4 @@ def pedidos(request, almacenId):
         pass
     elif request.method == 'DELETE':
         pass
-
-def orders(request):
-    pass
 

@@ -5,7 +5,7 @@ apiURL = "https://integracion-2019-dev.herokuapp.com/bodega/"
 
 
 # Estos son los ids de los almacenes del grupo, podemos guardarlos o no en la base de datos.
-# Pero creo que lo mejor es guardarlos para ahorrarnos la consulta a la API.
+# Pero creo que lo mejor es si o si guardarlos en algún lado para ahorrarnos la consulta a la API.
 almacenes = {
     "recepcion": "5cbd3ce444f67600049431e3",
     "pulmon":"5cbd3ce444f67600049431e7",
