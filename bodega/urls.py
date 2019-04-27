@@ -11,5 +11,5 @@ urlpatterns = [
     path('inventario', views.inventario),
     path('pedidos', views.new_pedido),
     url(r'pedidos/(?P<almacenId>\D+)',views.pedidos),
-    path('orders', views.orders),
+    # path('orders', views.orders),
 ]
