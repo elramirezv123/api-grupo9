@@ -14,7 +14,7 @@ Estas son las vistas que representan los endpoints descritos en nuestra document
 '''
 
 
-def inventaries(request):
+def inventories(request):
     # Este es un ejemplo, aún no está listo.
     sku = request.GET.get('sku', '')
     if sku:
