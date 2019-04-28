@@ -25,7 +25,7 @@ def get_products_with_sku(almacenId, sku):
     hash = hashQuery("GET"+almacenId+sku)
     headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
     response = requests.get(
-        apiURL + "skusWithStock?almacenId={}&sku={}".format(almacenId, sku), headers=headers)
+        apiURL + "Stock?almacenId={}&sku={}".format(almacenId, sku), headers=headers)
     return response
 
 
