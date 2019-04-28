@@ -17,7 +17,7 @@ class Product(models.Model):
     unit = models.CharField(max_length=255, null=True)
     batch = models.IntegerField(null=True)
     production_time = models.IntegerField(null=True)
-    created_on = models.DateTimeField(auto_now_add=True)
+    ingredients = models.ManyToManyField("self", related_name='ingredientes', symmetrical=False, through="Ingredient")
 
     def __str__(self):
         """A string representation of the model."""
@@ -25,13 +25,16 @@ class Product(models.Model):
 
 
 class Ingredient(models.Model):
-    name = models.TextField()
-    slug = models.SlugField(unique=True, max_length=255)
-    created_on = models.DateTimeField(auto_now_add=True)
+    sku_product = models.ForeignKey(Product, on_delete=models.CASCADE,
+                                        related_name="sku_product")
+    sku_ingredient = models.ForeignKey(Product, on_delete=models.CASCADE,
+                                        related_name="sku_ingredient")
 
-    def __str__(self):
-        """A string representation of the model."""
-        return self.name
+    quantity = models.DecimalField(decimal_places=2, max_digits=6)
+    production_batch = models.IntegerField()
+    quantity_batch = models.DecimalField(decimal_places=2, max_digits=6)
+    volume_in_store = models.IntegerField()
+
 
 
 class Request(models.Model):
