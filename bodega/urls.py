@@ -8,7 +8,7 @@ a nuestra API. La idea es hacerlo igual a como est√° descrito en la documentaci√
 '''
 
 urlpatterns = [
-    path('inventario', views.inventario),
-    path('pedidos', views.pedidos),
-    url(r'pedidos/(?P<cantidad>\D+)',views.pedidos),
+    path('inventaries', views.inventaries),
+    path('orders', views.orders),
+    url(r'orders/(?P<cantidad>\D+)',views.orders),
 ]

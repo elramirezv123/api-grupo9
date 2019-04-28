@@ -9,7 +9,6 @@ Estas son funciones útiles para hacer las llamadas a la API del profe.
 
 # Funcions útiles para bodega
 
-
 def get_skus_with_stock(almacenId):
     # Esta funcion permite obtener todos los sku no vencidos de algún almacén
     hash = hashQuery("GET"+almacenId)
@@ -25,7 +24,7 @@ def get_products_with_sku(almacenId, sku):
     hash = hashQuery("GET"+almacenId+sku)
     headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
     response = requests.get(
-        apiURL + "skusWithStock?almacenId={}&sku={}".format(almacenId, sku), headers=headers)
+        apiURL + "stock?almacenId={}&sku={}".format(almacenId, sku), headers=headers)
     return response
 
 

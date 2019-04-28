@@ -1,5 +1,5 @@
 from django.http import JsonResponse
-from .helpers.functions import get_skus_with_stock
+from .helpers.functions import get_skus_with_stock, get_products_with_sku
 from .constants import almacenes
 from .models import Request
 import json
@@ -13,7 +13,7 @@ Estas son las vistas que representan los endpoints descritos en nuestra document
 '''
 
 
-def inventario(request):
+def inventaries(request):
     # Este es un ejemplo, aún no está listo.
     sku = request.GET.get('sku', '')
     if sku:
@@ -29,14 +29,14 @@ def inventario(request):
     return JsonResponse(response, safe=False)
 
 
-def new_pedido(request):
+def new_order(request):
     # Debe ser metodo POST
     if request.method == 'POST':
         pass
 
 
 @csrf_exempt
-def pedidos(request):
+def orders(request):
     # Debe ser método POST y UPDATE
     if request.method == 'POST':
         # hay que guardar el pedido en la base de datos
