@@ -11,7 +11,7 @@ class Product(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
 
 class Ingredient(models.Model):
-    id = models.CharField(primary_key=True, max_length=255)
+    id = models.CharField(primary_key=True, max_length=255, autoincrement=True)
     Nombre = models.TextField()
     slug = models.SlugField(unique=True, max_length=255)
     created_on = models.DateTimeField(auto_now_add=True)
