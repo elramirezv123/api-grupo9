@@ -75,6 +75,9 @@ WSGI_APPLICATION = 'api_config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
 
+
+#HAY QUE HACER EXPORT DE CADA VARIABLE
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
