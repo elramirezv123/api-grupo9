@@ -74,7 +74,9 @@ WSGI_APPLICATION = 'api_config.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
-print(os.environ.get("DB_USER"))
+
+
+#HAY QUE HACER EXPORT DE CADA VARIABLE
 
 DATABASES = {
     'default': {
