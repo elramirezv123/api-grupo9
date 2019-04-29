@@ -1,5 +1,5 @@
 from .utils import hashQuery
-from ..constants import apiKey, almacenes, apiURL, headers
+from ..constants import apiKey, almacenes, apiURL, headers, minimum_stock
 import requests
 import json
 
@@ -26,6 +26,7 @@ def get_products_with_sku(almacenId, sku):
     response = requests.get(
         apiURL + "stock?almacenId={}&sku={}".format(almacenId, sku), headers=headers)
     return response
+
 
 
 def send_product(productId, oc, address, price):
@@ -102,3 +103,43 @@ def delete_hook(url):
 def get_request_body(request):
     body_unicode = request.body.decode('utf-8')
     return json.loads(body_unicode)
+
+
+
+def check_stock_of_product():
+
+    current_stocks = {}
+    for almacen in almacenes:
+        # products = get_products_with_sku(almacen, sku)
+        stocks = get_skus_with_stock(almacen)
+
+        for stock in stocks:
+            values = stock.values()
+            sku = vales[0]["sku"]
+            current_stock[sku] += values[1]
+    
+    
+    for sku in minimum_stock:
+        product_current_stock = current_stocks.get(sku, None)
+
+        if product_current_stock:
+            if product_current_stock > minimum_stock[sku]:
+                break
+            else:
+                diff = minimum_stock[sku] - product_current_stock
+                # Fabricar diferencia 
+        
+        # Fabricar total 
+        
+
+                
+
+
+
+
+
+
+
+
+
+    

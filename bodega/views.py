@@ -63,16 +63,3 @@ def orders(request):
     else:
         response = JsonResponse({'error': {'type': 'MethodError'}}, safe=False)
     return response
-
-
-def check_stock(sku_id, cantidad):
-    # chequeo si hay stock del producto
-    #print(sku_id)
-    #product = Product.objects.get(sku=sku_id)
-    print(sku_id)
-    response = get_products_with_sku(almacenes["despacho"], sku_id)
-    try:
-        print(response.content)
-    except Exception as e:
-        print(str(e))
-    return True
