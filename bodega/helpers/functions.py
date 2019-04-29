@@ -133,7 +133,9 @@ def check_stock_of_product():
         
 
                 
-
+def validate_post_body(body):
+    valid_keys = ['store_destination_id', 'sku_id', 'amount', 'group']
+    return set(body.keys()) == set(valid_keys)
 
 
 
