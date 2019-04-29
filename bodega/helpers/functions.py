@@ -102,3 +102,7 @@ def delete_hook(url):
 def get_request_body(request):
     body_unicode = request.body.decode('utf-8')
     return json.loads(body_unicode)
+
+def validate_post_body(body):
+    valid_keys = ['store_destination_id', 'sku_id', 'amount', 'group']
+    return set(body.keys()) == set(valid_keys)

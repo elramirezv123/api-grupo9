@@ -41,6 +41,11 @@ class Request(models.Model):
     store_destination_id = models.CharField(max_length=255)
     sku_id = models.CharField(max_length=255)
     amount = models.CharField(max_length=255)
+    group = models.IntegerField(null=True)
+    state = models.CharField(max_length=255, default="processing")
+    accepted = models.BooleanField(default=False)
+    dispatched = models.BooleanField(default=False)
+    deadline = models.DateField(null=True)
 
     def __str__(self):
         """A string representation of the model."""
