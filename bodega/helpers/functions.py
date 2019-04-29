@@ -124,7 +124,7 @@ def check_stock_of_product():
     return current_stocks
 
 
-{id_almacen:{sku:cantidad}}  
+{id_almacen:{sku:cantidad}}  ## HAY QUE CREAR UNA FUNCION QUE CHEQUEE RECEPCION Y SI HAY ENVIE A LIBRE 1 O 2
 
 # esta funcion chequea inventario constantemente y manda a fabricar si es necesario
 def thread_check() 
@@ -137,7 +137,11 @@ def thread_check()
                 break
             else:
                 diff = minimum_stock[sku] - product_current_stock
-                # Fabricar diferencia 
+                # Fabricar diferencia mas algo
+                # (stock minimo + 50)  * productos que lo requieren
+
+                make_a_product(sku, quantity)
+
         
         # Fabricar total        
 
