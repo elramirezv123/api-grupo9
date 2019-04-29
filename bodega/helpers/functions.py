@@ -107,30 +107,48 @@ def get_request_body(request):
 
 
 def check_stock_of_product():
-
     current_stocks = {}
     for almacen in almacenes:
         # products = get_products_with_sku(almacen, sku)
         stocks = get_skus_with_stock(almacen)
-
+        dict_sku = {}
         for stock in stocks:
             values = stock.values()
-            sku = vales[0]["sku"]
-            current_stock[sku] += values[1]
-    
-    
+            if(type(values[0])==dict):                    
+                sku = values[0]["sku"]
+                dict_sku[sku] += values[1]
+            else:
+                 sku = values[1]["sku"]
+               dict_sku[sku] += values[0]
+        current_stocks[almacen] = dict_sku
+    return current_stocks
+
+
+{id_almacen:{sku:cantidad}}  
+
+# esta funcion chequea inventario constantemente y manda a fabricar si es necesario
+def thread_check() 
+    current_stocks = check_stock_of_product()
     for sku in minimum_stock:
         product_current_stock = current_stocks.get(sku, None)
-
         if product_current_stock:
-            if product_current_stock > minimum_stock[sku]:
+            delta = 0
+            if product_current_stock > minimum_stock[sku] + delta:
                 break
             else:
                 diff = minimum_stock[sku] - product_current_stock
                 # Fabricar diferencia 
         
-        # Fabricar total 
-        
+        # Fabricar total        
+
+
+def check_stock_sku(sku):
+    stock = check_stock_of_product()
+    suma = 0
+    for almacen in stock:
+        suma += stock[almacen][sku]
+    return suma
+
 
                 
 def validate_post_body(body):
