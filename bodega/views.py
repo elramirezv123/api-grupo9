@@ -89,6 +89,11 @@ def orders(request):
         req_sku = req_body['sku']
         if not is_our_product(req_sku):
             return JsonResponse({'error': 'Sku is not produced by us'}, safe=False, status=400)
+        _, sku_stock_dict = get_inventary()
+
+        if req_sku not in list(map(lambda x: int(x), sku_stock_dict)):
+            return JsonResponse({'error': "We don't have stock of that sku. Sorry"}, safe=False, status=400)
+            
         request_id = req_body['pedido_id']
         request_deadline = datetime.strptime(req_body['deadline'], '%Y-%m-%d')
         request_entity = Request.objects.filter(id=int(request_id))
