@@ -118,8 +118,8 @@ def get_inventary():
                 sku = values[0]["sku"]
                 dict_sku[sku] += values[1]
             else:
-                 sku = values[1]["sku"]
-               dict_sku[sku] += values[0]
+                sku = values[1]["sku"]
+                dict_sku[sku] += values[0]
         current_stocks[almacen] = dict_sku
     return current_stocks  # de la forma {id_almacen:{sku:cantidad}} 
 
