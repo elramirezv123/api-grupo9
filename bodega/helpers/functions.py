@@ -19,7 +19,7 @@ def get_skus_with_stock(almacenId):
     headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
     response = requests.get(
         apiURL + "skusWithStock?almacenId={}".format(almacenId), headers=headers)
-    return response
+    return response.json()
 
 
 def get_products_with_sku(almacenId, sku):
@@ -112,20 +112,20 @@ def get_request_body(request):
 
 def get_inventary():
     #con esta funcion obtengo todo el stock de todos los sku para cada lmacen
-    current_stocks = {}  
-    for almacen in almacenes:
-        stocks = get_skus_with_stock(almacen)
+    current_stocks = {}
+    for almacen, almacenId in almacenes.items():
+        stocks = get_skus_with_stock(almacenId)
         dict_sku = {}
         for stock in stocks:
             values = stock.values()
-            if(type(values[0])==dict):                    
+            if(type(values[0])==dict):
                 sku = values[0]["sku"]
                 dict_sku[sku] += values[1]
             else:
                 sku = values[1]["sku"]
                 dict_sku[sku] += values[0]
         current_stocks[almacen] = dict_sku
-    return current_stocks  # de la forma {id_almacen:{sku:cantidad}} 
+    return current_stocks  # de la forma {id_almacen:{sku:cantidad}}
 
 
 
@@ -151,17 +151,20 @@ def thread_check():
                 cantidad = cantidad_a_pedir(sku)
                 make_a_product(sku, cantidad)
 
-        
-        # Fabricar total  
-        # no se cuando ocurre      
+
+        # Fabricar total
+        # no se cuando ocurre
 
 
-def get_stock_sku(sku): 
+def get_stock_sku(sku):
     # obtengo el total de stock que tengo para un solo sku en todos los alamacenes
     stock = get_inventary()
     suma = 0
     for almacen in stock:
-        suma += stock[almacen][sku]
+        try:
+            suma += stock[almacen][sku]
+        except KeyError:
+            continue
     return suma
 
 
@@ -177,9 +180,8 @@ def cantidad_a_pedir(sku):
 def actualizar_promedio(sku, cantidad_pedida):
     # actualiza el promedio de peticiones
     prom_request[sku][0] += cantidad_pedida
-    
 
-                
+    
 def validate_post_body(body):
     valid_keys = ['store_destination_id', 'sku_id', 'amount', 'group']
     return set(body.keys()) == set(valid_keys)
@@ -240,7 +242,14 @@ def request_sku_extern(sku, quantity):
     return False
 
 
+def validate_post_body(body):
+    valid_keys = ['almacenId', 'sku', 'cantidad']
+    return set(body.keys()) == set(valid_keys)
 
-
-
-    
+def produce_sku(sku, amount):
+    # Envía a producir amount unidades del sku.
+    hash = hashQuery("PUT" + str(sku) + str(amount))
+    headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
+    response = requests.put(
+        apiURL + "fabrica/fabricarSinPago", headers=headers)
+    return response.text

@@ -1,11 +1,11 @@
 from django.http import JsonResponse
-from .helpers.functions import get_skus_with_stock, get_products_with_sku, validate_post_body
-from .constants import almacenes
+from .helpers.functions import get_skus_with_stock, get_stock_sku, validate_post_body
+from .constants import almacenes, sku_products
 from .models import Request
 from .models import Product
 import json
 from django.views.decorators.csrf import csrf_exempt
-from .helpers.functions import get_request_body
+from .helpers.functions import get_request_body, get_inventary
 from datetime import datetime
 from datetime import timedelta
 
@@ -15,20 +15,27 @@ from datetime import timedelta
 Estas son las vistas que representan los endpoints descritos en nuestra documentación.
 '''
 
-
+@csrf_exempt
 def inventories(request):
-    # Este es un ejemplo, aún no está listo.
-    sku = request.GET.get('sku', '')
-    if sku:
-        pass
-    else:
-        pass
-    response = {
-        "name": "grupo9",
-        "cantidad_productos": "",
-        "inventario": ""
-    }
+    '''
+    Devuelve el array definido en la documentación:
+    [
+        {
+            sku: <id_sku_producto>,
+            nombre: <nombre_producto>,
+            total: <total_stock_producto>,
+        },
+        {...}
+        ..
+    ]
+    '''
+    response = []
+    if request.method == 'GET':
+        for product in Product.objects.filter(sku__in=sku_products):
+            response.append({ 'sku': product.sku, 'nombre': product.name, 'total': get_stock_sku(product.sku)})
 
+    if request.method == 'DELETE':
+        pass
     return JsonResponse(response, safe=False)
 
 
@@ -45,38 +52,64 @@ def orders(request):
         # hay que guardar el pedido en la base de datos
         '''
         Request usado:
-        {"store_destination_id": "asdasd", "sku_id": "012301", "amount": "10"}
+        {"almacenId": "asdasd", "sku": "012301", "cantidad": "10"}
         '''
         req_body = get_request_body(request)
         if validate_post_body(req_body):
             request_deadline = datetime.now() + timedelta(days=10)
-            request_entity = Request.objects.create(store_destination_id=req_body['store_destination_id'],
-                                                    sku_id=req_body['sku_id'],
-                                                    amount=req_body['amount'],
-                                                    group=req_body['group'],
+            request_entity = Request.objects.create(store_destination_id=req_body['almacenId'],
+                                                    sku_id=req_body['sku'],
+                                                    amount=req_body['cantidad'],
                                                     deadline=request_deadline)
 
             request_entity.save()
             request_response = {
                 'id' :request_entity.id,
                 'storeDestinationId' :request_entity.store_destination_id,
-                'group' :request_entity.group,
                 'accepted' :request_entity.accepted,
                 'dispatched' :request_entity.dispatched,
                 'deadline' :request_entity.deadline,
             }
-            response = JsonResponse(request_response, safe=False)
-            check_stock(request_entity.sku_id , request_entity.amount)
+            return JsonResponse(request_response, safe=False, status=201)
+            # check_stock(request_entity.sku_id , request_entity.amount)
         else:
-            response = JsonResponse({'error': 'Bad body format'}, safe=False, status=400)
-    elif request.method == 'DELETE':
-        pass
-    elif request.method == 'GET':
+            return JsonResponse({'error': 'Bad body format'}, safe=False, status=400)
+    elif request.method == 'PUT':
+        '''
+        Espera un body de la forma:
+        {"pedido_id": "1", "sku": 11, "cantidad": 0, "almacenId": "nuevo almacen", "deadline": "2019-10-29"}
+        '''
+        req_body = get_request_body(request)
+        req_sku = req_body['sku']
+        sku_product = len(Product.objects.filter(sku=int(req_sku)))
+        if not sku_product:
+            return JsonResponse({'error': 'Sku not in database'}, safe=False, status=400)
+        request_id = req_body['pedido_id']
+        request_deadline = datetime.strptime(req_body['deadline'], '%Y-%m-%d')
+        request_entity = Request.objects.filter(id=int(request_id))
+        request_entity.update(store_destination_id=req_body['almacenId'],
+                                                sku_id=req_body['sku'],
+                                                amount=req_body['cantidad'],
+                                                deadline=request_deadline)
+        request_entity = request_entity.get()
+        return JsonResponse({
+            'id' :request_entity.id,
+            'storeDestinationId' :request_entity.store_destination_id,
+            'accepted' :request_entity.accepted,
+            'dispatched' :request_entity.dispatched,
+            'deadline' :request_entity.deadline,
+        }, safe=False, status=200)
+    # elif request.method == 'DELETE': No debería estar implementado
+    #     request_id = req_body['pedido_id']
+    #     request_entity = Request.objects.get(id=int(request_id))
+    #     request_response = {
+    #         'deleted_id' :request_entity.id,
+    #     }
+    #     response = JsonResponse(request_response, safe=False)
+
+    # elif request.method == 'GET': No debería estar definido
         # pense en obtener el status de un pedido si es que el put y el repsonse con los productos son asincronos
         # es decir, hago el pedido y se demoran un tiempo en entregar
         # con el get chequeo el status del pedido
-        response = JsonResponse({'data': 'Nothing for GET yet'})
-        pass
-    else:
-        response = JsonResponse({'error': {'type': 'MethodError'}}, safe=False)
-    return response
+
+    return JsonResponse({'error': {'type': 'Method not implemented'}}, safe=False, status=404)
