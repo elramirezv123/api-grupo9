@@ -48,7 +48,6 @@ def new_order(request):
 @csrf_exempt
 def orders(request):
     # Debe ser método POST y UPDATE
-    response = JsonResponse({'error': {'type': 'Method not implemented'}}, safe=False, status=404)
     if request.method == 'POST':
         # hay que guardar el pedido en la base de datos
         '''
@@ -71,10 +70,10 @@ def orders(request):
                 'dispatched' :request_entity.dispatched,
                 'deadline' :request_entity.deadline,
             }
-            response = JsonResponse(request_response, safe=False, status=201)
+            return JsonResponse(request_response, safe=False, status=201)
             # check_stock(request_entity.sku_id , request_entity.amount)
         else:
-            response = JsonResponse({'error': 'Bad body format'}, safe=False, status=400)
+            return JsonResponse({'error': 'Bad body format'}, safe=False, status=400)
     elif request.method == 'PUT':
         '''
         Espera un body de la forma:
@@ -93,7 +92,7 @@ def orders(request):
                                                 amount=req_body['cantidad'],
                                                 deadline=request_deadline)
         request_entity = request_entity.get()
-        response = JsonResponse({
+        return JsonResponse({
             'id' :request_entity.id,
             'storeDestinationId' :request_entity.store_destination_id,
             'accepted' :request_entity.accepted,
@@ -113,4 +112,4 @@ def orders(request):
         # es decir, hago el pedido y se demoran un tiempo en entregar
         # con el get chequeo el status del pedido
 
-    return response
+    return JsonResponse({'error': {'type': 'Method not implemented'}}, safe=False, status=404)
