@@ -3,6 +3,9 @@ from ..constants import apiKey, almacenes, apiURL, headers, minimum_stock, prom_
 import requests
 import json
 
+PRODUCTS_JSON_PATH = os.path.abspath(os.path.join(
+    os.path.dirname(__file__), '..', 'productos.json'))
+
 '''
 Estas son funciones útiles para hacer las llamadas a la API del profe.
 '''
@@ -181,7 +184,52 @@ def validate_post_body(body):
     return set(body.keys()) == set(valid_keys)
 
 
+# Funciones útiles para trabajar con otros grupos
+def get_sku_stock_extern(group_number, sku):
+    """
+    obtiene el inventario de group_number, y devuelve el numero si tengan en stock y False en otro caso
+    """
+    response = requests.get("http://tuerca{}.ing.puc.cl/inventories".format(group_number))
+    for product in response:
+        if product["sku"] == sku:
+            return product["total"]
+    return False
 
+def place_order_extern(group_number, sku, quantity):
+    """
+    pone una orden de quantity productos sku al grupo group_number
+    """
+    headers["group"] = 9
+    body = {
+            “sku”: sku,
+            “cantidad”: quantity,
+            “almacenId”: almacenes["recepcion"]
+            }
+    response = requests.post("http://tuerca{}.ing.puc.cl/orders".format(group_number), 
+                            headers=headers, data=body)
+    return response
+
+def request_sku_extern(sku, quantity):
+    """
+    dado un sku y la cantidad a pedir, va a buscar entre todos los grupos que lo entregan y
+    poner ordenes hasta cumplir la cantidad deseada
+    retorna true si logro pedir quantity, y false si pidio menos
+    """
+    pending = float(quantity)
+    data = json.load(open(PRODUCTS_JSON_PATH, 'r'))
+    for product in data:
+        if product["sku"] == sku:
+            productors = product["grupos_productores"]
+            for group in productors:
+                if group != 9:
+                    available = get_sku_stock_extern(group, sku)
+                    to_order = min(pending, float(available))
+                    response = place_order_extern(group, sku, to_order)
+                    if response["aceptado"]:
+                        pending -= response["cantidad"]
+                        if pending == 0:
+                            return True
+        return False
 
 
 
