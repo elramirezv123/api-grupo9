@@ -223,12 +223,13 @@ def request_sku_extern(sku, quantity):
             for group in productors:
                 if group != 9:
                     available = get_sku_stock_extern(group, sku)
-                    to_order = min(pending, float(available))
-                    response = place_order_extern(group, sku, to_order)
-                    if response["aceptado"]:
-                        pending -= response["cantidad"]
-                        if pending == 0:
-                            return True
+                    if available:
+                        to_order = min(pending, float(available))
+                        response = place_order_extern(group, sku, to_order)
+                        if response["aceptado"]:
+                            pending -= response["cantidad"]
+                            if pending == 0:
+                                return True
         return False
 
 
