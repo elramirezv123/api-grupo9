@@ -45,28 +45,26 @@ def orders(request):
         # hay que guardar el pedido en la base de datos
         '''
         Request usado:
-        {"store_destination_id": "asdasd", "sku_id": "012301", "amount": "10"}
+        {"almacenId": "asdasd", "sku": "012301", "cantidad": "10"}
         '''
         req_body = get_request_body(request)
         if validate_post_body(req_body):
             request_deadline = datetime.now() + timedelta(days=10)
-            request_entity = Request.objects.create(store_destination_id=req_body['store_destination_id'],
-                                                    sku_id=req_body['sku_id'],
-                                                    amount=req_body['amount'],
-                                                    group=req_body['group'],
+            request_entity = Request.objects.create(store_destination_id=req_body['almacenId'],
+                                                    sku_id=req_body['sku'],
+                                                    amount=req_body['cantidad'],
                                                     deadline=request_deadline)
 
             request_entity.save()
             request_response = {
                 'id' :request_entity.id,
                 'storeDestinationId' :request_entity.store_destination_id,
-                'group' :request_entity.group,
                 'accepted' :request_entity.accepted,
                 'dispatched' :request_entity.dispatched,
                 'deadline' :request_entity.deadline,
             }
             response = JsonResponse(request_response, safe=False)
-            check_stock(request_entity.sku_id , request_entity.amount)
+            # check_stock(request_entity.sku_id , request_entity.amount)
         else:
             response = JsonResponse({'error': 'Bad body format'}, safe=False, status=400)
     elif request.method == 'DELETE':

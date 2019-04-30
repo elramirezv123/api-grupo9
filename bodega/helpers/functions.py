@@ -108,20 +108,20 @@ def get_request_body(request):
 
 def get_inventary():
     #con esta funcion obtengo todo el stock de todos los sku para cada lmacen
-    current_stocks = {}  
+    current_stocks = {}
     for almacen in almacenes:
         stocks = get_skus_with_stock(almacen)
         dict_sku = {}
         for stock in stocks:
             values = stock.values()
-            if(type(values[0])==dict):                    
+            if(type(values[0])==dict):
                 sku = values[0]["sku"]
                 dict_sku[sku] += values[1]
             else:
                 sku = values[1]["sku"]
                 dict_sku[sku] += values[0]
         current_stocks[almacen] = dict_sku
-    return current_stocks  # de la forma {id_almacen:{sku:cantidad}} 
+    return current_stocks  # de la forma {id_almacen:{sku:cantidad}}
 
 
 
@@ -147,12 +147,12 @@ def thread_check():
                 cantidad = cantidad_a_pedir(sku)
                 make_a_product(sku, cantidad)
 
-        
-        # Fabricar total  
-        # no se cuando ocurre      
+
+        # Fabricar total
+        # no se cuando ocurre
 
 
-def get_stock_sku(sku): 
+def get_stock_sku(sku):
     # obtengo el total de stock que tengo para un solo sku en todos los alamacenes
     stock = get_inventary()
     suma = 0
@@ -173,18 +173,9 @@ def cantidad_a_pedir(sku):
 def actualizar_promedio(sku, cantidad_pedida):
     # actualiza el promedio de peticiones
     prom_request[sku][0] += cantidad_pedida
-    
 
-                
+
+
 def validate_post_body(body):
-    valid_keys = ['store_destination_id', 'sku_id', 'amount', 'group']
+    valid_keys = ['almacenId', 'sku', 'cantidad']
     return set(body.keys()) == set(valid_keys)
-
-
-
-
-
-
-
-
-    
