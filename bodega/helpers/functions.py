@@ -252,7 +252,8 @@ def is_our_product(sku):
     return int(sku) in sku_products
 
 def get_inventories():
-    response = []
-    for product in Product.objects.filter(sku__in=sku_products):
-        response.append({ 'sku': product.sku, 'nombre': product.name, 'total': get_stock_sku(product.sku)})
-    return response
+    return list(map(lambda product: { 'sku': product.sku, 'nombre': product.name, 'total': get_stock_sku(product.sku)},
+                   Product.objects.filter(sku__in=sku_products)))
+    # for product in Product.objects.filter(sku__in=sku_products):
+    #     response.append({ 'sku': product.sku, 'nombre': product.name, 'total': get_stock_sku(product.sku)})
+    # return response
