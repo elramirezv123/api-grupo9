@@ -222,15 +222,19 @@ def request_sku_extern(sku, quantity):
     for product in data:
         if product["sku"] == sku:
             productors = product["grupos_productores"]
+            # print("productores: ", productors)
             for group in productors:
+                # print("viendo a ", group)
                 if group != 9:
                     available = get_sku_stock_extern(group, sku)
                     if available:
                         to_order = min(pending, float(available))
                         response = place_order_extern(group, sku, to_order)
                         if response.status_code in [200, 201]:
-                            if response["aceptado"]:
-                                pending -= response["cantidad"]
+                            response_json = response.json()
+                            # print(response_json)
+                            if response_json["aceptado"]:
+                                pending -= float(response_json["cantidad"])
                                 if pending == 0:
                                     return True                        
     return False
