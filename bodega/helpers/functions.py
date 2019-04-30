@@ -254,6 +254,6 @@ def is_our_product(sku):
 def get_inventories():
     return list(map(lambda product: { 'sku': product.sku, 'nombre': product.name, 'total': get_stock_sku(product.sku)},
                    Product.objects.filter(sku__in=sku_products)))
-    # for product in Product.objects.filter(sku__in=sku_products):
-    #     response.append({ 'sku': product.sku, 'nombre': product.name, 'total': get_stock_sku(product.sku)})
-    # return response
+def testing_celery():
+    r = requests.get('https://swapi.co/api/')
+    print(r.json())
