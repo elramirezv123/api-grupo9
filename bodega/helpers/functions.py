@@ -146,7 +146,7 @@ def thread_check():
             else:
                 # CASE: El producto es producido por otro grupo.
                 request_sku_extern(sku, cantidad)
-                
+
 # Fabricar diferencia mas algo
 # una funciona para la cantidad puede ser un promedio de la cantidad para cada producto pedido
 # entonces cada vez que me piden una cantidad, la entrego y luego pido la cantidad promedio de ese producto
@@ -156,7 +156,7 @@ def thread_check():
 
 def get_stock_sku(sku):
     # obtengo el total de stock que tengo para un solo sku en todos los alamacenes
-    stock = get_inventary()
+    stock, _ = get_inventary()
     suma = 0
     for almacen in stock:
         try:
@@ -248,5 +248,11 @@ def validate_post_body(body):
     valid_keys = ['almacenId', 'sku', 'cantidad']
     return set(body.keys()) == set(valid_keys)
 
-def sku_exists(sku):
-    return len(Product.objects.filter(sku=int(sku))) != 0
+def is_our_product(sku):
+    return int(sku) in sku_products
+
+def get_inventories():
+    response = []
+    for product in Product.objects.filter(sku__in=sku_products):
+        response.append({ 'sku': product.sku, 'nombre': product.name, 'total': get_stock_sku(product.sku)})
+    return response
