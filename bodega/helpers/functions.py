@@ -15,7 +15,7 @@ def get_skus_with_stock(almacenId):
     headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
     response = requests.get(
         apiURL + "skusWithStock?almacenId={}".format(almacenId), headers=headers)
-    return response
+    return response.json()
 
 
 def get_products_with_sku(almacenId, sku):
@@ -109,8 +109,8 @@ def get_request_body(request):
 def get_inventary():
     #con esta funcion obtengo todo el stock de todos los sku para cada lmacen
     current_stocks = {}
-    for almacen in almacenes:
-        stocks = get_skus_with_stock(almacen)
+    for almacen, almacenId in almacenes.items():
+        stocks = get_skus_with_stock(almacenId)
         dict_sku = {}
         for stock in stocks:
             values = stock.values()
@@ -157,7 +157,10 @@ def get_stock_sku(sku):
     stock = get_inventary()
     suma = 0
     for almacen in stock:
-        suma += stock[almacen][sku]
+        try:
+            suma += stock[almacen][sku]
+        except KeyError:
+            continue
     return suma
 
 
