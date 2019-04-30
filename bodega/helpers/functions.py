@@ -182,3 +182,11 @@ def actualizar_promedio(sku, cantidad_pedida):
 def validate_post_body(body):
     valid_keys = ['almacenId', 'sku', 'cantidad']
     return set(body.keys()) == set(valid_keys)
+
+def produce_sku(sku, amount):
+    # Envía a producir amount unidades del sku.
+    hash = hashQuery("PUT" + str(sku) + str(amount))
+    headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
+    response = requests.put(
+        apiURL + "fabrica/fabricarSinPago", headers=headers)
+    return response.text
