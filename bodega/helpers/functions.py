@@ -190,13 +190,10 @@ def get_sku_stock_extern(group_number, sku):
     """
     obtiene el inventario de group_number, y devuelve el numero si tengan en stock y False en otro caso
     """
-    print("<<<get_sku_stock_extern>>>")
-    print("viendo stock del grupo ", group_number)
     response = requests.get("http://tuerca{}.ing.puc.cl/inventories".format(group_number))
     if response.status_code in [200, 201]:
         for product in response.json():
             if product["sku"] == sku:
-                print("cantidad: ", product["total"])
                 return product["total"]
     return False
 
@@ -204,19 +201,14 @@ def place_order_extern(group_number, sku, quantity):
     """
     pone una orden de quantity productos sku al grupo group_number
     """
-    print("<<<place_order_extern>>>")
-    print("pidiento al grupo ", group_number)
-    headers["group"] = 9
+    headers["group"] = "9"
     body = {
             "sku": sku,
             "cantidad": quantity,
             "almacenId": almacenes["recepcion"]
             }
-    print("body a enviar: ", body)
     response = requests.post("http://tuerca{}.ing.puc.cl/orders".format(group_number), 
-                            headers=headers, data=body)
-    print("response code: ", response.status_code)
-    print("response: ", response)
+                            headers=headers, json=body)
     return response
 
 def request_sku_extern(sku, quantity):
