@@ -128,7 +128,7 @@ def get_inventary():
 
 # esta funcion chequea inventario constantemente y manda a fabricar si es necesario
 #esta funcion es a la que hay que aplicarle celery
-def thread_check() 
+def thread_check():
     current_stocks = get_inventary()
     for sku in minimum_stock:
         product_current_stock = current_stocks.get(sku, None)
