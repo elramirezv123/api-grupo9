@@ -2,9 +2,10 @@ from .utils import hashQuery
 from ..constants import apiKey, almacenes, apiURL, headers, minimum_stock, prom_request
 import requests
 import json
+import os
 
 PRODUCTS_JSON_PATH = os.path.abspath(os.path.join(
-    os.path.dirname(__file__), '..', 'productos.json'))
+    os.path.dirname(__file__), '..', '..', 'productos.json'))
 
 '''
 Estas son funciones útiles para hacer las llamadas a la API del profe.
@@ -186,30 +187,36 @@ def validate_post_body(body):
 
 # Funciones útiles para trabajar con otros grupos
 def get_sku_stock_extern(group_number, sku):
+    # print("*get_sku_stock_extern*: viendo el inventario de {} para producto {}".format(
+    #     group_number, sku))
     """
     obtiene el inventario de group_number, y devuelve el numero si tengan en stock y False en otro caso
     """
     response = requests.get("http://tuerca{}.ing.puc.cl/inventories".format(group_number))
-    for product in response:
-        if product["sku"] == sku:
-            return product["total"]
+    if response.status_code in [200, 201]:
+        for product in response:
+            print(product)
+            if product["sku"] == sku:
+                return product["total"]
     return False
 
 def place_order_extern(group_number, sku, quantity):
+    # print("*place_order_extern*: hay que pedir {} de {} a {}".format(quantity, sku, group_number))
     """
     pone una orden de quantity productos sku al grupo group_number
     """
     headers["group"] = 9
     body = {
-            “sku”: sku,
-            “cantidad”: quantity,
-            “almacenId”: almacenes["recepcion"]
+            "sku": sku,
+            "cantidad": quantity,
+            "almacenId": almacenes["recepcion"]
             }
     response = requests.post("http://tuerca{}.ing.puc.cl/orders".format(group_number), 
                             headers=headers, data=body)
     return response
 
 def request_sku_extern(sku, quantity):
+    # print("*request_sku_extern*: hay que pedir {} de {}".format(quantity, sku))
     """
     dado un sku y la cantidad a pedir, va a buscar entre todos los grupos que lo entregan y
     poner ordenes hasta cumplir la cantidad deseada
@@ -220,9 +227,11 @@ def request_sku_extern(sku, quantity):
     for product in data:
         if product["sku"] == sku:
             productors = product["grupos_productores"]
+            # print("productores: ", productors)
             for group in productors:
                 if group != 9:
                     available = get_sku_stock_extern(group, sku)
+                    print("productor {} tiene {}".formtat(group, available))
                     if available:
                         to_order = min(pending, float(available))
                         response = place_order_extern(group, sku, to_order)
@@ -230,7 +239,7 @@ def request_sku_extern(sku, quantity):
                             pending -= response["cantidad"]
                             if pending == 0:
                                 return True
-        return False
+    return False
 
 
 
