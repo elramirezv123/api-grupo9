@@ -1,5 +1,5 @@
 from .utils import hashQuery
-from ..constants import apiKey, almacenes, apiURL, headers, minimum_stock
+from ..constants import apiKey, almacenes, apiURL, headers, minimum_stock, prom_request
 import requests
 import json
 
@@ -106,10 +106,10 @@ def get_request_body(request):
 
 
 
-def check_stock_of_product():
-    current_stocks = {}
+def get_inventary():
+    #con esta funcion obtengo todo el stock de todos los sku para cada lmacen
+    current_stocks = {}  
     for almacen in almacenes:
-        # products = get_products_with_sku(almacen, sku)
         stocks = get_skus_with_stock(almacen)
         dict_sku = {}
         for stock in stocks:
@@ -121,14 +121,15 @@ def check_stock_of_product():
                  sku = values[1]["sku"]
                dict_sku[sku] += values[0]
         current_stocks[almacen] = dict_sku
-    return current_stocks
+    return current_stocks  # de la forma {id_almacen:{sku:cantidad}} 
 
 
-{id_almacen:{sku:cantidad}}  ## HAY QUE CREAR UNA FUNCION QUE CHEQUEE RECEPCION Y SI HAY ENVIE A LIBRE 1 O 2
+
 
 # esta funcion chequea inventario constantemente y manda a fabricar si es necesario
+#esta funcion es a la que hay que aplicarle celery
 def thread_check() 
-    current_stocks = check_stock_of_product()
+    current_stocks = get_inventary()
     for sku in minimum_stock:
         product_current_stock = current_stocks.get(sku, None)
         if product_current_stock:
@@ -138,21 +139,41 @@ def thread_check()
             else:
                 diff = minimum_stock[sku] - product_current_stock
                 # Fabricar diferencia mas algo
-                # (stock minimo + 50)  * productos que lo requieren
+                # una funciona para la cantidad puede ser un promedio de la cantidad para cada producto pedido
+                # entonces cada vez que me piden una cantidad, la entrego y luego pido la cantidad promedio de ese producto
+                # asi podriamos mantener un stock confiable que no salga mucho del rango
+                # y establecemos un minimo de peticion como por ejemplo 10
 
-                make_a_product(sku, quantity)
+                cantidad = cantidad_a_pedir(sku)
+                make_a_product(sku, cantidad)
 
         
-        # Fabricar total        
+        # Fabricar total  
+        # no se cuando ocurre      
 
 
-def check_stock_sku(sku):
-    stock = check_stock_of_product()
+def get_stock_sku(sku): 
+    # obtengo el total de stock que tengo para un solo sku en todos los alamacenes
+    stock = get_inventary()
     suma = 0
     for almacen in stock:
         suma += stock[almacen][sku]
     return suma
 
+
+
+def cantidad_a_pedir(sku):
+    # calcula el promedio, incluyendo la nueva cantidad pedida
+    # devuelve la cantidad a pedir para un sku
+    # hay que almacenar en alguna parte este promedio
+    # la idea es que cuando LLEGUE un PEDIDO, si este se acepta, actualizar el valor de la suma para ese sku
+    promedio = prom_request[sku][0] / prom_request[sku][1]
+    return promedio
+
+def actualizar_promedio(sku, cantidad_pedida):
+    # actualiza el promedio de peticiones
+    prom_request[sku][0] += cantidad_pedida
+    
 
                 
 def validate_post_body(body):
