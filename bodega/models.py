@@ -10,6 +10,7 @@ class Product(models.Model):
     description = models.TextField()
     price = models.IntegerField(null=True)
     slug = models.SlugField(unique=True, max_length=255)
+    used_by = models.IntegerField(null=True)
     duration = models.DecimalField(
         null=True, decimal_places=2, max_digits=6)
     equivalence = models.DecimalField(
