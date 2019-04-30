@@ -1,5 +1,5 @@
 from django.http import JsonResponse
-from .helpers.functions import get_skus_with_stock, get_stock_sku, validate_post_body
+from .helpers.functions import get_skus_with_stock, get_stock_sku, validate_post_body, sku_exists, thread_check
 from .constants import almacenes, sku_products
 from .models import Request
 from .models import Product
@@ -55,6 +55,9 @@ def orders(request):
         {"almacenId": "asdasd", "sku": "012301", "cantidad": "10"}
         '''
         req_body = get_request_body(request)
+        req_sku = req_body['sku']
+        if not sku_exists(req_sku):
+            return JsonResponse({'error': 'Sku not in database'}, safe=False, status=400)
         if validate_post_body(req_body):
             request_deadline = datetime.now() + timedelta(days=10)
             request_entity = Request.objects.create(store_destination_id=req_body['almacenId'],
@@ -81,8 +84,7 @@ def orders(request):
         '''
         req_body = get_request_body(request)
         req_sku = req_body['sku']
-        sku_product = len(Product.objects.filter(sku=int(req_sku)))
-        if not sku_product:
+        if not sku_exists(req_sku):
             return JsonResponse({'error': 'Sku not in database'}, safe=False, status=400)
         request_id = req_body['pedido_id']
         request_deadline = datetime.strptime(req_body['deadline'], '%Y-%m-%d')
@@ -99,17 +101,7 @@ def orders(request):
             'dispatched' :request_entity.dispatched,
             'deadline' :request_entity.deadline,
         }, safe=False, status=200)
-    # elif request.method == 'DELETE': No debería estar implementado
-    #     request_id = req_body['pedido_id']
-    #     request_entity = Request.objects.get(id=int(request_id))
-    #     request_response = {
-    #         'deleted_id' :request_entity.id,
-    #     }
-    #     response = JsonResponse(request_response, safe=False)
-
-    # elif request.method == 'GET': No debería estar definido
-        # pense en obtener el status de un pedido si es que el put y el repsonse con los productos son asincronos
-        # es decir, hago el pedido y se demoran un tiempo en entregar
-        # con el get chequeo el status del pedido
-
+    elif request.method == 'GET':
+        print(make_a_product(1010, 1))
+        return JsonResponse({'data': 'hola'}, safe=False)
     return JsonResponse({'error': {'type': 'Method not implemented'}}, safe=False, status=404)

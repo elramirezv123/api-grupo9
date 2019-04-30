@@ -1,5 +1,6 @@
 from .utils import hashQuery
 from ..constants import apiKey, almacenes, apiURL, headers, minimum_stock, prom_request
+from ..models import Product
 import requests
 import json
 import os
@@ -70,12 +71,12 @@ def make_a_product(sku, quantity):
     # OJO: Este servicio será deprecado.
     # A través de este servicio se envían a fabricar productos con o sin materias primas.
     # Este servicio no requiere realizar el pago de la fabricación.
-    hash = hashQuery("PUT"+sku+quantity)
+    hash = hashQuery("PUT"+str(sku)+str(quantity))
     headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
     body = {"sku": str(sku), "cantidad": quantity}
-    response = request.put(
+    response = requests.put(
         apiURL + "fabrica/fabricarSinPago", headers=headers, data=body)
-    return response
+    return response.text
 
 # Funcions utiles para la recepción de productos
 
@@ -181,7 +182,7 @@ def actualizar_promedio(sku, cantidad_pedida):
     # actualiza el promedio de peticiones
     prom_request[sku][0] += cantidad_pedida
 
-    
+
 def validate_post_body(body):
     valid_keys = ['store_destination_id', 'sku_id', 'amount', 'group']
     return set(body.keys()) == set(valid_keys)
@@ -209,7 +210,7 @@ def place_order_extern(group_number, sku, quantity):
             "cantidad": quantity,
             "almacenId": almacenes["recepcion"]
             }
-    response = requests.post("http://tuerca{}.ing.puc.cl/orders".format(group_number), 
+    response = requests.post("http://tuerca{}.ing.puc.cl/orders".format(group_number),
                             headers=headers, json=body)
     return response
 
@@ -238,7 +239,7 @@ def request_sku_extern(sku, quantity):
                             if response_json["aceptado"]:
                                 pending -= float(response_json["cantidad"])
                                 if pending == 0:
-                                    return True                        
+                                    return True
     return False
 
 
@@ -246,10 +247,5 @@ def validate_post_body(body):
     valid_keys = ['almacenId', 'sku', 'cantidad']
     return set(body.keys()) == set(valid_keys)
 
-def produce_sku(sku, amount):
-    # Envía a producir amount unidades del sku.
-    hash = hashQuery("PUT" + str(sku) + str(amount))
-    headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
-    response = requests.put(
-        apiURL + "fabrica/fabricarSinPago", headers=headers)
-    return response.text
+def sku_exists(sku):
+    return len(Product.objects.filter(sku=int(sku))) != 0
