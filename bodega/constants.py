@@ -1,8 +1,13 @@
 # Constantes útiles
 
-apiKey = "R&FTHQi3AkqUx%6" 
+apiKey = "R&FTHQi3AkqUx%6"
 apiURL = "https://integracion-2019-dev.herokuapp.com/bodega/"
 
+
+# Umbral, se pedirá si es que tenemos menos de stock_minimo + DELTA
+DELTA = 0
+# Factor de multiplicación para pedidos
+REQUEST_FACTOR = 10
 
 # Estos son los ids de los almacenes del grupo, podemos guardarlos o no en la base de datos.
 # Pero creo que lo mejor es si o si guardarlos en algún lado para ahorrarnos la consulta a la API.

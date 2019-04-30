@@ -1,5 +1,5 @@
 from .utils import hashQuery
-from ..constants import apiKey, almacenes, apiURL, headers, minimum_stock, prom_request
+from ..constants import apiKey, almacenes, apiURL, headers, minimum_stock, prom_request, DELTA, sku_products, REQUEST_FACTOR
 from ..models import Product
 import requests
 import json
@@ -113,20 +113,20 @@ def get_request_body(request):
 
 def get_inventary():
     #con esta funcion obtengo todo el stock de todos los sku para cada lmacen
+    '''
+    current_stocks: {'almacenId': [{sku: <cantidad>}]} (cantidad por almacen)
+    current_sku_stocks: {sku: <cantidad>} (cantidad total por sku)
+    '''
     current_stocks = {}
+    current_sku_stocks = {}
     for almacen, almacenId in almacenes.items():
         stocks = get_skus_with_stock(almacenId)
         dict_sku = {}
         for stock in stocks:
-            values = stock.values()
-            if(type(values[0])==dict):
-                sku = values[0]["sku"]
-                dict_sku[sku] += values[1]
-            else:
-                sku = values[1]["sku"]
-                dict_sku[sku] += values[0]
+            dict_sku[stock['_id']] = stock['total']
+            current_sku_stocks[stock['_id']] = stock['total']
         current_stocks[almacen] = dict_sku
-    return current_stocks  # de la forma {id_almacen:{sku:cantidad}}
+    return current_stocks, current_sku_stocks
 
 
 
@@ -134,27 +134,24 @@ def get_inventary():
 # esta funcion chequea inventario constantemente y manda a fabricar si es necesario
 #esta funcion es a la que hay que aplicarle celery
 def thread_check():
-    current_stocks = get_inventary()
+    current_stocks, current_sku_stocks = get_inventary()
     for sku in minimum_stock:
-        product_current_stock = current_stocks.get(sku, None)
-        if product_current_stock:
-            delta = 0
-            if product_current_stock > minimum_stock[sku] + delta:
-                break
-            else:
-                diff = minimum_stock[sku] - product_current_stock
-                # Fabricar diferencia mas algo
-                # una funciona para la cantidad puede ser un promedio de la cantidad para cada producto pedido
-                # entonces cada vez que me piden una cantidad, la entrego y luego pido la cantidad promedio de ese producto
-                # asi podriamos mantener un stock confiable que no salga mucho del rango
-                # y establecemos un minimo de peticion como por ejemplo 10
-
-                cantidad = cantidad_a_pedir(sku)
+        product_current_stock = current_sku_stocks.get(sku, 0)
+        if product_current_stock < minimum_stock[sku] + DELTA:
+            diff = (minimum_stock[sku] - product_current_stock)
+            cantidad = cantidad_a_pedir(sku)
+            if (int(sku) in sku_products):
+                # CASE: El producto es producido por nosotros.
                 make_a_product(sku, cantidad)
-
-
-        # Fabricar total
-        # no se cuando ocurre
+            else:
+                # CASE: El producto es producido por otro grupo.
+                request_sku_extern(sku, cantidad)
+                
+# Fabricar diferencia mas algo
+# una funciona para la cantidad puede ser un promedio de la cantidad para cada producto pedido
+# entonces cada vez que me piden una cantidad, la entrego y luego pido la cantidad promedio de ese producto
+# asi podriamos mantener un stock confiable que no salga mucho del rango
+# y establecemos un minimo de peticion como por ejemplo 10
 
 
 def get_stock_sku(sku):
@@ -175,8 +172,12 @@ def cantidad_a_pedir(sku):
     # devuelve la cantidad a pedir para un sku
     # hay que almacenar en alguna parte este promedio
     # la idea es que cuando LLEGUE un PEDIDO, si este se acepta, actualizar el valor de la suma para ese sku
+    '''
+    Falta un handling acá. Cuando prom_request está vacío se cae este método.
     promedio = prom_request[sku][0] / prom_request[sku][1]
-    return promedio
+    '''
+    used_by_amount = Product.objects.get(sku=int(sku)).used_by
+    return used_by_amount * REQUEST_FACTOR
 
 def actualizar_promedio(sku, cantidad_pedida):
     # actualiza el promedio de peticiones

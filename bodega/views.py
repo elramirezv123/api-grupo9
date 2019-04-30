@@ -102,6 +102,6 @@ def orders(request):
             'deadline' :request_entity.deadline,
         }, safe=False, status=200)
     elif request.method == 'GET':
-        print(make_a_product(1010, 1))
+        print(thread_check())
         return JsonResponse({'data': 'hola'}, safe=False)
     return JsonResponse({'error': {'type': 'Method not implemented'}}, safe=False, status=404)
