@@ -25,7 +25,11 @@ SECRET_KEY = 'vxhh*2)x^98vo5kd9vu*32(+wvd6z@$cbf27dc1)46%(+3-upm'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+if DEBUG:
+    ALLOWED_HOSTS = [*]
+else:
+    ALLOWED_HOSTS = ['tuerca9.ing.puc.cl']
+    
 
 
 # Application definition
@@ -81,9 +85,9 @@ WSGI_APPLICATION = 'api_config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': os.environ.get("INTEGRACION_DB"),
-        'USER': os.environ.get("DB_USER"),
-        'PASSWORD': os.environ.get("DB_PASS"),
+        'NAME': "apidb",
+        'USER': "grupo9",
+        'PASSWORD': "password",
         'HOST': "localhost",
         'PORT': 5432
     }
