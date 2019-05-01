@@ -1,7 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 from celery import shared_task
-from .helpers.functions import testing_celery
+from .helpers.functions import thread_check
 
-@shared_task(name= 'testing')
+@shared_task(name= 'thread-check')
 def wrapper(*args, **kwargs):
-    testing_celery()
+    thread_check()

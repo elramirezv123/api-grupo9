@@ -11,16 +11,11 @@ app = Celery('api_config')
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
 app.conf.beat_schedule = {
-    'add-every-15-seconds': {  #name of the scheduler
-        'task': 'testing',  # task name which we have created in tasks.py
-        'schedule': 15.0,   # set the period of running
-        'args': (16, 16)  # set the args
-    },
-    # 'print-name-every-5-seconds': {  #name of the scheduler
-    #     'task': 'print_msg_with_name',  # task name which we have created in tasks.py
-    #     'schedule': 5.0,  # set the period of running
-    #      'args': ("DjangoPY", )  # set the args
-    # },
+    'add-every-300-seconds': {  #name of the scheduler
+        'task': 'thread-check',  # task name which we have created in tasks.py
+        'schedule': 300.0,   # set the period of running
+                            # set the args
+    }
 }
 
 app.autodiscover_tasks()
