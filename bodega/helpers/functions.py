@@ -196,9 +196,12 @@ def get_sku_stock_extern(group_number, sku):
     response = requests.get("http://tuerca{}.ing.puc.cl/inventories".format(group_number))
     if response.status_code in [200, 201]:
         for product in response.json():
-            if product["sku"] == sku:
-                return product["total"]
-    return False
+            try:
+                if product["sku"] == sku:
+                    return product["total"]
+                return False
+            except:
+                return False
 
 def place_order_extern(group_number, sku, quantity):
     """
