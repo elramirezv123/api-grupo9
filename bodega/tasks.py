@@ -4,4 +4,4 @@ from .helpers.functions import thread_check
 
 @shared_task(name= 'thread-check')
 def wrapper(*args, **kwargs):
-    print("Estoy funcionando bien")
+    thread_check()
