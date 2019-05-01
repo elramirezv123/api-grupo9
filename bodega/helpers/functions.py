@@ -154,9 +154,8 @@ def thread_check():
 # y establecemos un minimo de peticion como por ejemplo 10
 
 
-def get_stock_sku(sku):
+def get_stock_sku(sku, stock):
     # obtengo el total de stock que tengo para un solo sku en todos los alamacenes
-    stock, _ = get_inventary()
     suma = 0
     for almacen in stock:
         try:
@@ -197,9 +196,12 @@ def get_sku_stock_extern(group_number, sku):
     response = requests.get("http://tuerca{}.ing.puc.cl/inventories".format(group_number))
     if response.status_code in [200, 201]:
         for product in response.json():
-            if product["sku"] == sku:
-                return product["total"]
-    return False
+            try:
+                if product["sku"] == sku:
+                    return product["total"]
+                return False
+            except:
+                return False
 
 def place_order_extern(group_number, sku, quantity):
     """
@@ -252,7 +254,8 @@ def is_our_product(sku):
     return int(sku) in sku_products
 
 def get_inventories():
-    return list(map(lambda product: { 'sku': product.sku, 'nombre': product.name, 'total': get_stock_sku(product.sku)},
+    stock, _ = get_inventary()
+    return list(map(lambda product: { 'sku': product.sku, 'nombre': product.name, 'total': get_stock_sku(product.sku, stock)},
                    Product.objects.filter(sku__in=sku_products)))
 def testing_celery():
     r = requests.get('https://swapi.co/api/')
