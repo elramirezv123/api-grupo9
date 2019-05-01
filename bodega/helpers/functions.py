@@ -41,7 +41,7 @@ def send_product(productId, oc, address, price):
     headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
     body = {"productoId": productId, "oc": oc,
             "direccion": address, "precio": int(price)}
-    response = requests.delete(apiURL + "stock", headers=headers, data=body)
+    response = requests.delete(apiURL + "stock", headers=headers, json=body)
     return response
 
 
@@ -50,7 +50,7 @@ def move_product_inter_almacen(productId, almacenId):
     hash = hashQuery("POST"+productId+almacenId)
     headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
     body = {"productoId": productId, "almacenId": almacenId}
-    response = requests.post(apiURL + "moveStock", headers=headers, data=body)
+    response = requests.post(apiURL + "moveStock", headers=headers, json=body)
 
 
 def move_product_to_another_group(productId, almacenId):
@@ -61,7 +61,7 @@ def move_product_to_another_group(productId, almacenId):
     headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
     body = {"productoId": productId, "almacenId": almacenId}
     response = requests.post(apiURL + "moveStockBodega",
-                             headers=headers, data=body)
+                             headers=headers, json=body)
 
 
 # Funciones útiles para fábricar productos
@@ -75,8 +75,8 @@ def make_a_product(sku, quantity):
     headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
     body = {"sku": str(sku), "cantidad": quantity}
     response = requests.put(
-        apiURL + "fabrica/fabricarSinPago", headers=headers, data=body)
-    return response.text
+        apiURL + "fabrica/fabricarSinPago", headers=headers, json=body)
+    return response
 
 # Funcions utiles para la recepción de productos
 
@@ -87,7 +87,7 @@ def set_hook(url):
     hash = hashQuery("PUT"+url)
     headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
     body = {"url": url}
-    response = request.put(apiURL + "hook", headers=headers, data=body)
+    response = request.put(apiURL + "hook", headers=headers, json=body)
     return response
 
 

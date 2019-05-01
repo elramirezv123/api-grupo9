@@ -7,7 +7,7 @@ from celery import Celery
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'api_config.settings')
 
-app = Celery('api_config', broker="amqp://localhost//")
+app = Celery('api_config')
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
 app.conf.beat_schedule = {
