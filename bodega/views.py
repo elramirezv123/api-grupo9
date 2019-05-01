@@ -5,7 +5,7 @@ from .models import Request
 from .models import Product, Ingredient
 import json
 from django.views.decorators.csrf import csrf_exempt
-from .helpers.functions import get_request_body, get_inventory, get_inventories
+from .helpers.functions import get_request_body, get_inventory, get_inventories, request_sku_extern, thread_check
 from datetime import datetime
 from datetime import timedelta
 
@@ -110,7 +110,4 @@ def orders(request):
 
 
 def test(request):
-    product = Product.objects.get(pk="1114")
-    ingredients = Ingredient.objects.filter(sku_product="1101")
-    for product in ingredients:
-        print(product.sku_ingredient.sku)
+    thread_check()

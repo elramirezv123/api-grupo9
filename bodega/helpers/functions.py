@@ -1,6 +1,6 @@
 from .utils import hashQuery
 from ..constants import apiKey, almacenes, apiURL, headers, minimum_stock, prom_request, DELTA, sku_products, REQUEST_FACTOR
-from ..models import Product
+from ..models import Product, Ingredient
 import requests
 import json
 import os
@@ -124,7 +124,7 @@ def get_inventory():
     current_stocks = {}
     current_sku_stocks = {}
     for almacen, almacenId in almacenes.items():
-        stocks = get_skus_with_stock(almacenId)
+        almacen_stocks = get_skus_with_stock(almacenId)
         dict_sku = {}
         for stock in almacen_stocks:
             dict_sku[stock['_id']] = stock['total']
@@ -147,29 +147,41 @@ def thread_check():
             # entonces revisar si lo podemos fabricar con lo que tenemos
             is_ok, pending = request_sku_extern(sku, cantidad) 
             if not is_ok:
-                # Si esque no pudimos conseguir todo, veremos primero si esque necesita
-                # ingredientes
-                ingredients = Ingredient.objects.filter(sku_product=sku)
-                if len(ingredients) > 0:
-                    # Si esque necesita ingredientes, veremos si los tenemos. Si esque si, enviamos
-                    # a procesar el producto, si esque no, entonces los pedimos
-                    for ingredient in ingredients:
-                        stock_we_have = product_current_stock.get(ingredient.ingredient_sku.sku, 0)
-                        if stock_we_have > ingredient.volume_in_store:
-                            # Si esque tenemos lo suficiente, lo enviamos a despacho
-                            send_to_somewhere(sku, ingredient.volume_in_store, almacenes["despacho"])
-                        else:
-                            # Si esque no tenemos suficiente, pedimos a los otros grupos
-                            is_ok, pending = request_sku_extern(sku, ingredient.volume_in_store)
-                    
-                    # Enviamos a procesar el producto, ya que los ingredientes deberían estar en 
-                    # despacho
-                    make_a_product(sku, pending)
+                request_for_ingredient(sku, pending, current_sku_stocks)
             else:
                 # Si estamos ok, entonces los enviamos a despacho y lo enviamos a fabricar
                 send_to_somewhere(sku, cantidad, almacenes["despacho"])
                 make_a_product(sku, cantidad)
 
+    for prod in sku_products:
+        cantidad = cantidad_a_pedir(prod)
+        make_a_product(prod, cantidad)
+
+def request_for_ingredient(sku, pending, current_sku_stocks):
+    # Si esque no pudimos conseguir todo, veremos primero si esque necesita
+    # ingredientes
+    ingredients = Ingredient.objects.filter(sku_product=sku)
+    if len(ingredients) > 0:
+        # Si esque necesita ingredientes, veremos si los tenemos. Si esque si, enviamos
+        # a procesar el producto, si esque no, entonces los pedimos
+        for ingredient in ingredients:
+            new_sku = ingredient.sku_ingredient.sku
+            stock_we_have = current_sku_stocks.get(new_sku, 0)
+            if stock_we_have > ingredient.volume_in_store:
+                # Si esque tenemos lo suficiente, lo enviamos a despacho
+                send_to_somewhere(new_sku, ingredient.volume_in_store, almacenes["despacho"])
+            else:
+                # Si esque no tenemos suficiente, pedimos a los otros grupos
+                is_ok, pending = request_sku_extern(new_sku, ingredient.volume_in_store)
+                if not is_ok:
+                    request_for_ingredient(new_sku, pending, current_sku_stocks)
+        
+        # Enviamos a procesar el producto, ya que los ingredientes deberían estar en 
+        # despacho
+        make_a_product(sku, pending)
+    else:
+        return
+    
 
 
 
@@ -201,7 +213,7 @@ def cantidad_a_pedir(sku):
     Falta un handling acá. Cuando prom_request está vacío se cae este método.
     promedio = prom_request[sku][0] / prom_request[sku][1]
     '''
-    used_by_amount = Product.objects.get(sku=int(sku)).used_by
+    used_by_amount = Product.objects.get(sku=int(sku)).batch
     return used_by_amount * REQUEST_FACTOR
 
 def actualizar_promedio(sku, cantidad_pedida):
@@ -221,13 +233,14 @@ def get_sku_stock_extern(group_number, sku):
     """
     try:
         response = requests.get("http://tuerca{}.ing.puc.cl/inventories".format(group_number))
-        time.sleep(1)
-        if response.status_code in [200, 201]:
+        if len(response.json()) > 0:
             for product in response.json():
-                    if product["sku"] == sku:
-                        return product["total"]
-                    return False
-    except:
+                gotcha = product.get("sku", None)
+                if gotcha:
+                    return product["total"]
+                else:
+            return False
+    except Exception as err:
         return False
 
 
@@ -243,7 +256,7 @@ def place_order_extern(group_number, sku, quantity):
             }
     response = requests.post("http://tuerca{}.ing.puc.cl/orders".format(group_number),
                             headers=headers, json=body)
-    return response.json()
+    return response
 
 def request_sku_extern(sku, quantity):
     """
@@ -253,26 +266,21 @@ def request_sku_extern(sku, quantity):
     """
     pending = float(quantity)
     product = Product.objects.get(pk=sku)
-
-
-
-    for product in data:
-        if product["sku"] == sku:
-            productors = product["grupos_productores"]
-            for group in productors:
-                # print("viendo a ", group)
-                if group != 9:
-                    available = get_sku_stock_extern(group, sku)
-                    if available:
-                        to_order = min(pending, float(available))
-                        response = place_order_extern(group, sku, to_order)
-                        if response.status_code in [200, 201]:
-                            response_json = response.json()
-                            # print(response_json)
-                            if response_json["aceptado"]:
-                                pending -= float(response_json["cantidad"])
-                                if pending == 0:
-                                    return True, 0
+    productors = product.productors.split(",")
+    for group in productors:
+        if group != "9":
+            available = get_sku_stock_extern(group, sku)
+            if available:
+                to_order = min(pending, float(available))
+                response = place_order_extern(group, sku, to_order)
+                try:
+                    response_json = response.json()
+                    if response_json["aceptado"]:
+                        pending -= float(response_json["cantidad"])
+                        if pending <= 0:
+                            return True, 0
+                except Exception as err:
+                    return False, pending
     return False, pending
 
 
