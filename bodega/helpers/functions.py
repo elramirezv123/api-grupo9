@@ -31,7 +31,7 @@ def get_products_with_sku(almacenId, sku):
     headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
     response = requests.get(
         apiURL + "stock?almacenId={}&sku={}".format(almacenId, sku), headers=headers)
-    return response
+    return response.json()
 
 
 
@@ -43,7 +43,7 @@ def send_product(productId, oc, address, price):
     body = {"productoId": productId, "oc": oc,
             "direccion": address, "precio": int(price)}
     response = requests.delete(apiURL + "stock", headers=headers, json=body)
-    return response
+    return response.json()
 
 
 def move_product_inter_almacen(productId, almacenId):
@@ -52,6 +52,7 @@ def move_product_inter_almacen(productId, almacenId):
     headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
     body = {"productoId": productId, "almacenId": almacenId}
     response = requests.post(apiURL + "moveStock", headers=headers, json=body)
+    return response.json()
 
 
 def move_product_to_another_group(productId, almacenId):
@@ -63,6 +64,8 @@ def move_product_to_another_group(productId, almacenId):
     body = {"productoId": productId, "almacenId": almacenId}
     response = requests.post(apiURL + "moveStockBodega",
                              headers=headers, json=body)
+
+    return response.json()
 
 
 # Funciones útiles para fábricar productos
@@ -77,7 +80,7 @@ def make_a_product(sku, quantity):
     body = {"sku": str(sku), "cantidad": quantity}
     response = requests.put(
         apiURL + "fabrica/fabricarSinPago", headers=headers, json=body)
-    return response
+    return response.json()
 
 # Funcions utiles para la recepción de productos
 
@@ -89,21 +92,21 @@ def set_hook(url):
     headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
     body = {"url": url}
     response = request.put(apiURL + "hook", headers=headers, json=body)
-    return response
+    return response.json()
 
 
 def get_hook():
     hash = hashQuery("GET")
     headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
     response = request.get(apiURL + "hook", headers=headers)
-    return response
+    return response.json()
 
 
 def delete_hook(url):
     hash = hashQuery("DELETE")
     headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
     response = request.delete(apiURL + "hook", headers=headers)
-    return response
+    return response.json()
 
 
 def get_request_body(request):
@@ -112,7 +115,7 @@ def get_request_body(request):
 
 
 
-def get_inventary():
+def get_inventory():
     #con esta funcion obtengo todo el stock de todos los sku para cada lmacen
     '''
     current_stocks: {'almacenId': [{sku: <cantidad>}]} (cantidad por almacen)
@@ -123,30 +126,52 @@ def get_inventary():
     for almacen, almacenId in almacenes.items():
         stocks = get_skus_with_stock(almacenId)
         dict_sku = {}
-        for stock in stocks:
+        for stock in almacen_stocks:
             dict_sku[stock['_id']] = stock['total']
-            current_sku_stocks[stock['_id']] = stock['total']
+            current_sku_stocks[stock['_id']] = stock['total'] + current_sku_stocks.get(stock["_id"], 0)
         current_stocks[almacen] = dict_sku
     return current_stocks, current_sku_stocks
 
 
 
-
 # esta funcion chequea inventario constantemente y manda a fabricar si es necesario
-#esta funcion es a la que hay que aplicarle celery
+# esta funcion es a la que hay que aplicarle celery
 def thread_check():
-    current_stocks, current_sku_stocks = get_inventary()
+    current_stocks, current_sku_stocks = get_inventory()
     for sku in minimum_stock:
+        # Revisamos todos los minimos 
         product_current_stock = current_sku_stocks.get(sku, 0)
         if product_current_stock < minimum_stock[sku] + DELTA:
-            diff = (minimum_stock[sku] - product_current_stock)
             cantidad = cantidad_a_pedir(sku)
-            if (int(sku) in sku_products):
-                # CASE: El producto es producido por nosotros.
-                make_a_product(sku, cantidad)
+            # Revisamos en los otros grupos si esque lo podemos pedir, si esque no
+            # entonces revisar si lo podemos fabricar con lo que tenemos
+            is_ok, pending = request_sku_extern(sku, cantidad) 
+            if not is_ok:
+                # Si esque no pudimos conseguir todo, veremos primero si esque necesita
+                # ingredientes
+                ingredients = Ingredient.objects.filter(sku_product=sku)
+                if len(ingredients) > 0:
+                    # Si esque necesita ingredientes, veremos si los tenemos. Si esque si, enviamos
+                    # a procesar el producto, si esque no, entonces los pedimos
+                    for ingredient in ingredients:
+                        stock_we_have = product_current_stock.get(ingredient.ingredient_sku.sku, 0)
+                        if stock_we_have > ingredient.volume_in_store:
+                            # Si esque tenemos lo suficiente, lo enviamos a despacho
+                            send_to_somewhere(sku, ingredient.volume_in_store, almacenes["despacho"])
+                        else:
+                            # Si esque no tenemos suficiente, pedimos a los otros grupos
+                            is_ok, pending = request_sku_extern(sku, ingredient.volume_in_store)
+                    
+                    # Enviamos a procesar el producto, ya que los ingredientes deberían estar en 
+                    # despacho
+                    make_a_product(sku, pending)
             else:
-                # CASE: El producto es producido por otro grupo.
-                request_sku_extern(sku, cantidad)
+                # Si estamos ok, entonces los enviamos a despacho y lo enviamos a fabricar
+                send_to_somewhere(sku, cantidad, almacenes["despacho"])
+                make_a_product(sku, cantidad)
+
+
+
 
 # Fabricar diferencia mas algo
 # una funciona para la cantidad puede ser un promedio de la cantidad para cada producto pedido
@@ -218,7 +243,7 @@ def place_order_extern(group_number, sku, quantity):
             }
     response = requests.post("http://tuerca{}.ing.puc.cl/orders".format(group_number),
                             headers=headers, json=body)
-    return response
+    return response.json()
 
 def request_sku_extern(sku, quantity):
     """
@@ -227,7 +252,10 @@ def request_sku_extern(sku, quantity):
     retorna true si logro pedir quantity, y false si pidio menos
     """
     pending = float(quantity)
-    data = json.load(open(PRODUCTS_JSON_PATH, 'r'))
+    product = Product.objects.get(pk=sku)
+
+
+
     for product in data:
         if product["sku"] == sku:
             productors = product["grupos_productores"]
@@ -244,8 +272,8 @@ def request_sku_extern(sku, quantity):
                             if response_json["aceptado"]:
                                 pending -= float(response_json["cantidad"])
                                 if pending == 0:
-                                    return True
-    return False
+                                    return True, 0
+    return False, pending
 
 
 def validate_post_body(body):
@@ -256,6 +284,29 @@ def is_our_product(sku):
     return int(sku) in sku_products
 
 def get_inventories():
-    stock, _ = get_inventary()
+    stock, _ = get_inventory()
     return list(map(lambda product: { 'sku': product.sku, 'nombre': product.name, 'total': get_stock_sku(product.sku, stock)},
                    Product.objects.all()))
+
+def move_products(products, almacenId):
+    # Recorre la lista de productos que se le entrega y lo mueve entre almacenes (solo de nosotros)
+    for product in products:
+        move_product_inter_almacen(product["_id"], almacenId)
+
+def send_to_somewhere(sku, cantidad, to_almacen):
+    # Mueve el producto y la cantidad que se quiera hacia el almacen que se quiera (solo de nosotros)
+    for almacen, almacenId in almacenes.items():
+        if almacen != "despacho":
+            products = get_products_with_sku(almacenId, sku)
+            diff = len(products) - cantidad
+            try:
+                if diff >= 0:
+                    move_products(products[:cantidad], to_almacen)
+                    return True
+                else:
+                    move_products(products, to_almacen)
+                    cantidad -= len(products)
+            except:
+                return False
+
+

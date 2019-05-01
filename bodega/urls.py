@@ -11,4 +11,5 @@ urlpatterns = [
     path('inventories', views.inventories),
     path('orders', views.orders),
     url(r'orders/(?P<cantidad>\D+)',views.orders),
+    path('test', views.test)
 ]

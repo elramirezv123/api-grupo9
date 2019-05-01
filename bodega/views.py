@@ -1,11 +1,11 @@
 from django.http import JsonResponse
-from .helpers.functions import get_skus_with_stock, get_stock_sku, validate_post_body, thread_check, is_our_product, get_inventories, get_inventary
+from .helpers.functions import get_skus_with_stock, get_stock_sku, validate_post_body, thread_check, is_our_product
 from .constants import almacenes, sku_products
 from .models import Request
-from .models import Product
+from .models import Product, Ingredient
 import json
 from django.views.decorators.csrf import csrf_exempt
-from .helpers.functions import get_request_body, get_inventary
+from .helpers.functions import get_request_body, get_inventory, get_inventories
 from datetime import datetime
 from datetime import timedelta
 
@@ -36,12 +36,6 @@ def inventories(request):
     if request.method == 'DELETE':
         pass
     return JsonResponse(response, safe=False)
-
-
-def new_order(request):
-    # Debe ser metodo POST
-    if request.method == 'POST':
-        pass
 
 
 @csrf_exempt
@@ -113,3 +107,10 @@ def orders(request):
         print(thread_check())
         return JsonResponse({'data': 'hola'}, safe=False)
     return JsonResponse({'error': {'type': 'Method not implemented'}}, safe=False, status=404)
+
+
+def test(request):
+    product = Product.objects.get(pk="1114")
+    ingredients = Ingredient.objects.filter(sku_product="1101")
+    for product in ingredients:
+        print(product.sku_ingredient.sku)
