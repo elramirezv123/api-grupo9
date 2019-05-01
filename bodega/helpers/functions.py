@@ -4,6 +4,7 @@ from ..models import Product
 import requests
 import json
 import os
+import time
 
 PRODUCTS_JSON_PATH = os.path.abspath(os.path.join(
     os.path.dirname(__file__), '..', '..', 'productos.json'))
@@ -193,15 +194,17 @@ def get_sku_stock_extern(group_number, sku):
     """
     obtiene el inventario de group_number, y devuelve el numero si tengan en stock y False en otro caso
     """
-    response = requests.get("http://tuerca{}.ing.puc.cl/inventories".format(group_number))
-    if response.status_code in [200, 201]:
-        for product in response.json():
-            try:
-                if product["sku"] == sku:
-                    return product["total"]
-                return False
-            except:
-                return False
+    try:
+        response = requests.get("http://tuerca{}.ing.puc.cl/inventories".format(group_number))
+        time.sleep(1)
+        if response.status_code in [200, 201]:
+            for product in response.json():
+                    if product["sku"] == sku:
+                        return product["total"]
+                    return False
+    except:
+        return False
+    
 
 def place_order_extern(group_number, sku, quantity):
     """
@@ -228,7 +231,6 @@ def request_sku_extern(sku, quantity):
     for product in data:
         if product["sku"] == sku:
             productors = product["grupos_productores"]
-            # print("productores: ", productors)
             for group in productors:
                 # print("viendo a ", group)
                 if group != 9:
@@ -257,6 +259,3 @@ def get_inventories():
     stock, _ = get_inventary()
     return list(map(lambda product: { 'sku': product.sku, 'nombre': product.name, 'total': get_stock_sku(product.sku, stock)},
                    Product.objects.filter(sku__in=sku_products)))
-def testing_celery():
-    r = requests.get('https://swapi.co/api/')
-    print(r.json())
