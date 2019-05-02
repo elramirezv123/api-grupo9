@@ -239,7 +239,7 @@ def get_sku_stock_extern(group_number, sku):
                 if gotcha:
                     return product["total"]
                 else:
-            return False
+                    return False
     except Exception as err:
         return False
 
@@ -293,8 +293,7 @@ def is_our_product(sku):
 
 def get_inventories():
     stock, _ = get_inventory()
-    return list(map(lambda product: { 'sku': product.sku, 'nombre': product.name, 'total': get_stock_sku(product.sku, stock)},
-                   Product.objects.all()))
+    return [{"sku": sku, "total": cantidad} for sku,cantidad in _.items()]
 
 def move_products(products, almacenId):
     # Recorre la lista de productos que se le entrega y lo mueve entre almacenes (solo de nosotros)
