@@ -1,6 +1,6 @@
 from .utils import hashQuery
 from ..constants import apiKey, almacenes, apiURL, headers, minimum_stock, prom_request, DELTA, sku_products, REQUEST_FACTOR
-from ..models import Product, Ingredient
+from ..models import Product, Ingredient, Request
 import requests
 import json
 import os
@@ -227,9 +227,9 @@ def actualizar_promedio(sku, cantidad_pedida):
     prom_request[sku][0] += cantidad_pedida
 
 
-def validate_post_body(body):
-    valid_keys = ['store_destination_id', 'sku_id', 'amount', 'group']
-    return set(body.keys()) == set(valid_keys)
+# def validate_post_body(body):
+#     valid_keys = ['store_destination_id', 'sku_id', 'amount', 'group']
+#     return set(body.keys()) == set(valid_keys)
 
 
 # Funciones útiles para trabajar con otros grupos
@@ -332,23 +332,41 @@ def get_inventories():
 
 def move_products(products, almacenId):
     # Recorre la lista de productos que se le entrega y lo mueve entre almacenes (solo de nosotros)
+    producto_movidos = []
     for product in products:
+        producto_movidos.append(product)
         move_product_inter_almacen(product["_id"], almacenId)
+    return producto_movidos
 
 def send_to_somewhere(sku, cantidad, to_almacen):
     # Mueve el producto y la cantidad que se quiera hacia el almacen que se quiera (solo de nosotros)
+    producto_movidos = []
     for almacen, almacenId in almacenes.items():
         if almacen != "despacho":
             products = get_products_with_sku(almacenId, sku)
             diff = len(products) - cantidad
             try:
                 if diff >= 0:
-                    move_products(products[:cantidad], to_almacen)
-                    return True
+                    producto_movidos += move_products(products[:cantidad], to_almacen)
+                    return producto_movidos
                 else:
-                    move_products(products, to_almacen)
+                    producto_movidos += move_products(products, to_almacen)
                     cantidad -= len(products)
-            except:
-                return False
+            except:             
+                return producto_movidos
 
+
+def send_order_another_group(request_id):
+    #esta funcion mueve el producto a despacho
+    # para luego enviar ese producto al grupo que lo pidio
+    request_entity = Request.objects.filter(id=int(request_id))
+    request_entity = request_entity.get()
+    if not request_entity.dispatched:
+        sku = request_entity.sku_id
+        amount = request_entity.amount
+        # movemos a despacho
+        productos_movidos = send_to_somewhere(sku, int(amount), almacenes["despacho"])
+        # enviamos luego al grupo externo
+        for product in productos_movidos:
+            move_product_to_another_group(product["_id"], request_entity.store_destination_id)
 

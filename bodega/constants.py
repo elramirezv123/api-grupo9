@@ -32,7 +32,6 @@ almacenes = {
     "cocina": "5cc7b139a823b10004d8e702",
     "libre1": "5cc7b139a823b10004d8e700",
     "despacho": "5cc7b139a823b10004d8e6fe",
-
 }
 
 headers = {'Content-Type': 'application/json'}
