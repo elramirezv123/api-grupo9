@@ -5,6 +5,7 @@ import requests
 import json
 import os
 import time
+import random
 
 PRODUCTS_JSON_PATH = os.path.abspath(os.path.join(
     os.path.dirname(__file__), '..', '..', 'productos.json'))
@@ -138,7 +139,11 @@ def get_inventory():
 # esta funcion es a la que hay que aplicarle celery
 def thread_check():
     current_stocks, current_sku_stocks = get_inventory()
-    for sku in minimum_stock:
+    print("current stock: ", current_sku_stocks)
+    minimum_stock_list = list(minimum_stock.keys())
+    random.shuffle(minimum_stock_list)
+    for sku in minimum_stock_list:
+        print("SKU a preguntar: ", sku)
         # Revisamos todos los minimos 
         product_current_stock = current_sku_stocks.get(sku, 0)
         if product_current_stock < minimum_stock[sku] + DELTA:
@@ -233,14 +238,20 @@ def get_sku_stock_extern(group_number, sku):
     """
     try:
         response = requests.get("http://tuerca{}.ing.puc.cl/inventories".format(group_number))
-        if len(response.json()) > 0:
-            for product in response.json():
-                gotcha = product.get("sku", None)
+        response = json.loads(response.text)
+        print("Sku que estoy preguntando: ", sku)
+        print("Response1:", response, type(response))
+        if len(response) > 0:
+            for product in response:
+                gotcha = product.get("sku", False)
                 if gotcha:
-                    return product["total"]
+                    if sku == gotcha:
+                        print("gotcha {}, sku: {}".format(gotcha, sku))
+                        return product["total"]
                 else:
                     return False
     except Exception as err:
+        print("otro error: ", err)
         return False
 
 
@@ -248,6 +259,7 @@ def place_order_extern(group_number, sku, quantity):
     """
     pone una orden de quantity productos sku al grupo group_number
     """
+    print("ahora voy a pedir {} cantidad: {}".format(sku, quantity))
     headers["group"] = "9"
     body = {
             "sku": sku,
@@ -267,19 +279,29 @@ def request_sku_extern(sku, quantity):
     pending = float(quantity)
     product = Product.objects.get(pk=sku)
     productors = product.productors.split(",")
+    choice = random.choice([1,2])
+    print("choice: ", choice)
+    if choice % 2 == 0:
+        productors.reverse()
+    print("productores: ", productors)
     for group in productors:
+        print("Preguntando a grupo", group)
         if group != "9":
             available = get_sku_stock_extern(group, sku)
+            print("available: ", available)
             if available:
                 to_order = min(pending, float(available))
                 response = place_order_extern(group, sku, to_order)
                 try:
-                    response_json = response.json()
-                    if response_json["aceptado"]:
-                        pending -= float(response_json["cantidad"])
-                        if pending <= 0:
-                            return True, 0
+                    print(response)
+                    response = json.loads(response.text)
+                    print("Response2:", response)
+                    print("Me lo aceptaron yupi")
+                    pending -= float(response["cantidad"])
+                    if pending <= 0:
+                        return True, 0
                 except Exception as err:
+                    print("Este error: ", err)
                     return False, pending
     return False, pending
 

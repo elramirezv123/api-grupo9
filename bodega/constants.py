@@ -1,11 +1,11 @@
 # Constantes útiles
 # DEV
-apiKey = "R&FTHQi3AkqUx%6"
-apiURL = "https://integracion-2019-dev.herokuapp.com/bodega/"
+# apiKey = "R&FTHQi3AkqUx%6"
+# apiURL = "https://integracion-2019-dev.herokuapp.com/bodega/"
 
 # PRODUCTION
-# apiKey = "R&FTHQi3AkqUx%6"
-# apiURL = "https://integracion-2019-prod.herokuapp.com/bodega/"
+apiKey = "R&FTHQi3AkqUx%6"
+apiURL = "https://integracion-2019-prod.herokuapp.com/bodega/"
 
 
 # Umbral, se pedirá si es que tenemos menos de stock_minimo + DELTA
@@ -15,13 +15,24 @@ REQUEST_FACTOR = 10
 
 # Estos son los ids de los almacenes del grupo, podemos guardarlos o no en la base de datos.
 # Pero creo que lo mejor es si o si guardarlos en algún lado para ahorrarnos la consulta a la API.
+# Almacenes id de desarrollo
+# almacenes = {
+#     "recepcion": "5cbd3ce444f67600049431e3",
+#     "pulmon":"5cbd3ce444f67600049431e7",
+#     "cocina": "5cbd3ce444f67600049431e8",
+#     "libre1": "5cbd3ce444f67600049431e5",
+#     "despacho":"5cbd3ce444f67600049431e4",
+# }
+
+# Almacenes id para produccion
+
 almacenes = {
-    "recepcion": "5cbd3ce444f67600049431e3",
-    "pulmon":"5cbd3ce444f67600049431e7",
-    "despacho":"5cbd3ce444f67600049431e4",
-    "cocina": "5cbd3ce444f67600049431e8",
-    "libre1": "5cbd3ce444f67600049431e5",
-    "libre2": "5cbd3ce444f67600049431e6"
+    "recepcion": "5cc7b139a823b10004d8e6fd",
+    "pulmon": "5cc7b139a823b10004d8e701",
+    "cocina": "5cc7b139a823b10004d8e702",
+    "libre1": "5cc7b139a823b10004d8e700",
+    "despacho": "5cc7b139a823b10004d8e6fe",
+
 }
 
 headers = {'Content-Type': 'application/json'}
