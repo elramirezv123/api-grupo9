@@ -142,6 +142,7 @@ def thread_check():
     print("current stock: ", current_sku_stocks)
     minimum_stock_list = list(minimum_stock.keys())
     random.shuffle(minimum_stock_list)
+    inventories = {}
     for sku in minimum_stock_list:
         print("SKU a preguntar: ", sku)
         # Revisamos todos los minimos 
@@ -150,9 +151,9 @@ def thread_check():
             cantidad = cantidad_a_pedir(sku)
             # Revisamos en los otros grupos si esque lo podemos pedir, si esque no
             # entonces revisar si lo podemos fabricar con lo que tenemos
-            is_ok, pending = request_sku_extern(sku, cantidad) 
+            is_ok, pending = request_sku_extern(sku, cantidad, inventories) 
             if not is_ok:
-                request_for_ingredient(sku, pending, current_sku_stocks)
+                request_for_ingredient(sku, pending, current_sku_stocks, inventories)
             else:
                 # Si estamos ok, entonces los enviamos a despacho y lo enviamos a fabricar
                 send_to_somewhere(sku, cantidad, almacenes["despacho"])
@@ -162,7 +163,7 @@ def thread_check():
         cantidad = cantidad_a_pedir(prod)
         make_a_product(prod, cantidad)
 
-def request_for_ingredient(sku, pending, current_sku_stocks):
+def request_for_ingredient(sku, pending, current_sku_stocks, inventories):
     # Si esque no pudimos conseguir todo, veremos primero si esque necesita
     # ingredientes
     ingredients = Ingredient.objects.filter(sku_product=sku)
@@ -177,9 +178,9 @@ def request_for_ingredient(sku, pending, current_sku_stocks):
                 send_to_somewhere(new_sku, ingredient.volume_in_store, almacenes["despacho"])
             else:
                 # Si esque no tenemos suficiente, pedimos a los otros grupos
-                is_ok, pending = request_sku_extern(new_sku, ingredient.volume_in_store)
+                is_ok, pending = request_sku_extern(new_sku, ingredient.volume_in_store,inventories)
                 if not is_ok:
-                    request_for_ingredient(new_sku, pending, current_sku_stocks)
+                    request_for_ingredient(new_sku, pending, current_sku_stocks, inventories)
         
         # Enviamos a procesar el producto, ya que los ingredientes deberían estar en 
         # despacho
@@ -232,27 +233,39 @@ def validate_post_body(body):
 
 
 # Funciones útiles para trabajar con otros grupos
-def get_sku_stock_extern(group_number, sku):
+def get_sku_stock_extern(group_number, sku, inventories):
     """
     obtiene el inventario de group_number, y devuelve el numero si tengan en stock y False en otro caso
     """
-    try:
-        response = requests.get("http://tuerca{}.ing.puc.cl/inventories".format(group_number))
-        response = json.loads(response.text)
-        print("Sku que estoy preguntando: ", sku)
-        print("Response1:", response, type(response))
-        if len(response) > 0:
-            for product in response:
-                gotcha = product.get("sku", False)
-                if gotcha:
-                    if sku == gotcha:
-                        print("gotcha {}, sku: {}".format(gotcha, sku))
-                        return product["total"]
-                else:
-                    return False
-    except Exception as err:
-        print("otro error: ", err)
-        return False
+    inventorie = inventories.get(group_number, False)
+    if inventorie:
+        for product in inventorie:
+            gotcha = product.get("sku", False)
+            if gotcha:
+                if sku == gotcha:
+                    print("gotcha {}, sku: {}".format(gotcha, sku))
+                    return product["total"]
+            else:
+                return False
+    else:
+        try:
+            response = requests.get("http://tuerca{}.ing.puc.cl/inventories".format(group_number))
+            response = json.loads(response.text)
+            inventories["group_number"] = response
+            print("Sku que estoy preguntando: ", sku)
+            print("Response1:", response, type(response))
+            if len(response) > 0:
+                for product in response:
+                    gotcha = product.get("sku", False)
+                    if gotcha:
+                        if sku == gotcha:
+                            print("gotcha {}, sku: {}".format(gotcha, sku))
+                            return product["total"]
+                    else:
+                        return False
+        except Exception as err:
+            print("otro error: ", err)
+            return False
 
 
 def place_order_extern(group_number, sku, quantity):
@@ -270,7 +283,7 @@ def place_order_extern(group_number, sku, quantity):
                             headers=headers, json=body)
     return response
 
-def request_sku_extern(sku, quantity):
+def request_sku_extern(sku, quantity, inventories):
     """
     dado un sku y la cantidad a pedir, va a buscar entre todos los grupos que lo entregan y
     poner ordenes hasta cumplir la cantidad deseada
@@ -287,7 +300,7 @@ def request_sku_extern(sku, quantity):
     for group in productors:
         print("Preguntando a grupo", group)
         if group != "9":
-            available = get_sku_stock_extern(group, sku)
+            available = get_sku_stock_extern(group, sku, inventories)
             print("available: ", available)
             if available:
                 to_order = min(pending, float(available))
