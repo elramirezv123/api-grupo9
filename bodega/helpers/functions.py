@@ -145,17 +145,28 @@ def thread_check():
     inventories = {}
     for sku in minimum_stock_list:
         print("SKU a preguntar: ", sku)
-        # Revisamos todos los minimos 
+        # Revisamos todos los minimos
         product_current_stock = current_sku_stocks.get(sku, 0)
         if product_current_stock < minimum_stock[sku] + DELTA:
             cantidad = cantidad_a_pedir(sku)
             # Revisamos en los otros grupos si esque lo podemos pedir, si esque no
             # entonces revisar si lo podemos fabricar con lo que tenemos
-            is_ok, pending = request_sku_extern(sku, cantidad, inventories) 
+            is_ok, pending = request_sku_extern(sku, cantidad, inventories)
             if not is_ok:
                 request_for_ingredient(sku, pending, current_sku_stocks, inventories)
+                # maked = request_for_ingredient(sku, pending, current_sku_stocks, inventories)
+                '''
+                Aquí yo intentaría hacerlo no más para esta entrega, como se puede
+                fabricar sin materia prima.
+                '''
+                # make_a_product(sku, cantidad)
+
             else:
                 # Si estamos ok, entonces los enviamos a despacho y lo enviamos a fabricar
+                '''
+                Por qué a despacho? Acá entra si es que pudimos pedir todo, por qué querríamos fabricar más?
+                Enviaría todo a pulmón (ya que tendría el mínimo del sku)
+                '''
                 send_to_somewhere(sku, cantidad, almacenes["despacho"])
                 make_a_product(sku, cantidad)
 
@@ -164,6 +175,9 @@ def thread_check():
         make_a_product(prod, cantidad)
 
 def request_for_ingredient(sku, pending, current_sku_stocks, inventories):
+    # Debería retornar si es que se pudo realizar el producto.
+    # Nos interesa saber si al hacer el request "a través de los ingredientes"
+    # logramos fabricarlos.
     # Si esque no pudimos conseguir todo, veremos primero si esque necesita
     # ingredientes
     ingredients = Ingredient.objects.filter(sku_product=sku)
@@ -175,19 +189,36 @@ def request_for_ingredient(sku, pending, current_sku_stocks, inventories):
             stock_we_have = current_sku_stocks.get(new_sku, 0)
             if stock_we_have > ingredient.volume_in_store:
                 # Si esque tenemos lo suficiente, lo enviamos a despacho
+                '''
+                Podríamos chequear si es que hay en despcho antes de mover las cosas
+                para no sobrecargar despacho (además, es más rápido).
+                '''
                 send_to_somewhere(new_sku, ingredient.volume_in_store, almacenes["despacho"])
             else:
                 # Si esque no tenemos suficiente, pedimos a los otros grupos
                 is_ok, pending = request_sku_extern(new_sku, ingredient.volume_in_store,inventories)
                 if not is_ok:
+                    '''
+                    Faltó pedir (pending es positivo). Intentemos pedir/hacer los ingredientes.
+                    '''
                     request_for_ingredient(new_sku, pending, current_sku_stocks, inventories)
-        
-        # Enviamos a procesar el producto, ya que los ingredientes deberían estar en 
+                '''
+                Se pudo pedir (no hay pending). Intentemos hacer sku de nuevo
+                Creo que debería ir el return para terminar esta rama en la recursión.
+                '''
+                return request_for_ingredient(sku, pending, current_sku_stocks, inventories)
+                # return True
+
+        # Enviamos a procesar el producto, ya que los ingredientes deberían estar en
         # despacho
         make_a_product(sku, pending)
     else:
+        '''
+        Acá no deberíamos hacer el ingrendiente base? (el que tiene 0 ingredientes para hacerse)
+        make_a_product(sku, pending)
+        '''
         return
-    
+
 
 
 
@@ -304,18 +335,22 @@ def request_sku_extern(sku, quantity, inventories):
             print("available: ", available)
             if available:
                 to_order = min(pending, float(available))
+                print(to_order)
                 response = place_order_extern(group, sku, to_order)
                 try:
                     print(response)
                     response = json.loads(response.text)
                     print("Response2:", response)
-                    print("Me lo aceptaron yupi")
                     pending -= float(response["cantidad"])
+                    '''
+                    Se imprime que lo aceptaron sólo si no hay exception
+                    '''
+                    print("Me lo aceptaron yupi")
                     if pending <= 0:
                         return True, 0
                 except Exception as err:
                     print("Este error: ", err)
-                    return False, pending
+                    continue
     return False, pending
 
 
@@ -352,7 +387,7 @@ def send_to_somewhere(sku, cantidad, to_almacen):
                 else:
                     producto_movidos += move_products(products, to_almacen)
                     cantidad -= len(products)
-            except:             
+            except:
                 return producto_movidos
 
 
@@ -369,4 +404,3 @@ def send_order_another_group(request_id):
         # enviamos luego al grupo externo
         for product in productos_movidos:
             move_product_to_another_group(product["_id"], request_entity.store_destination_id)
-

@@ -1,5 +1,5 @@
 from django.http import JsonResponse
-from .helpers.functions import get_skus_with_stock, send_order_another_group, get_stock_sku, validate_post_body, thread_check, is_our_product
+from .helpers.functions import get_skus_with_stock, send_order_another_group, get_stock_sku, validate_post_body, thread_check, is_our_product, request_sku_extern
 from .constants import almacenes, sku_products
 from .models import Request
 from .models import Product, Ingredient, Request
@@ -56,7 +56,7 @@ def orders(request):
         if not is_our_product(req_sku):
             return JsonResponse({'error': 'Sku is not produced by us'}, safe=False, status=400)
         stock, sku_stock_dict = get_inventory()
-        lista = list(map(lambda x: int(x), sku_stock_dict))       
+        lista = list(map(lambda x: int(x), sku_stock_dict))
         if req_sku not in lista or int(sku_stock_dict[str(req_sku)]) < int(req_body['cantidad']):
             return JsonResponse({'error': "We don't have stock of that sku. Sorry"}, safe=False, status=400)
         if validate_post_body(req_body):
@@ -69,6 +69,7 @@ def orders(request):
             request_entity.save()
             request_response = {
                 'id' :request_entity.id,
+                'cantidad': request_entity.amount,
                 'storeDestinationId' :request_entity.store_destination_id,
                 'accepted' :request_entity.accepted,
                 'dispatched' :request_entity.dispatched,
@@ -76,7 +77,7 @@ def orders(request):
             }
             ###
             ######  SIN PROBAR
-            
+
             #send_order_another_group(request_entity.id)
 
             ####
@@ -97,7 +98,7 @@ def orders(request):
         _, sku_stock_dict = get_inventory()
         if req_sku not in lista or int(sku_stock_dict[str(req_sku)]) < int(req_body['cantidad']):
             return JsonResponse({'error': "We don't have stock of that sku. Sorry"}, safe=False, status=400)
-            
+
         request_id = req_body['pedido_id']
         request_deadline = datetime.strptime(req_body['deadline'], '%Y-%m-%d')
         request_entity = Request.objects.filter(id=int(request_id))
@@ -120,4 +121,5 @@ def orders(request):
 
 
 def test(request):
-    thread_check()
+    # request_sku_extern('1112', 10, {})
+    return JsonResponse({'test': 'working'}, safe=False, status=200)
