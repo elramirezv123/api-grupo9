@@ -36,6 +36,15 @@ def get_products_with_sku(almacenId, sku):
 
 
 
+def check_almacen(required_sku, required_amount, almacen_name):
+    skus_in_almacen = get_skus_with_stock(almacenes[almacen_name])
+    for available_sku in skus_in_almacen:
+        sku, total = available_sku['_id'], available_sku['total']
+        if (sku == str(required_sku)):
+            return total >= required_amount
+    return False
+
+
 def send_product(productId, oc, address, price):
     # Despacha un producto no vencido presenta en la bodega de
     # despacho a la dirección indicada.
@@ -193,7 +202,10 @@ def request_for_ingredient(sku, pending, current_sku_stocks, inventories):
                 Podríamos chequear si es que hay en despcho antes de mover las cosas
                 para no sobrecargar despacho (además, es más rápido).
                 '''
-                send_to_somewhere(new_sku, ingredient.volume_in_store, almacenes["despacho"])
+                in_despacho = check_almacen(new_sku, ingredient.volume_in_store, 'despacho')
+                if not in_despacho:
+                    # Habría que hacer espacio en despacho.
+                    send_to_somewhere(new_sku, ingredient.volume_in_store, almacenes["despacho"])
             else:
                 # Si esque no tenemos suficiente, pedimos a los otros grupos
                 is_ok, pending = request_sku_extern(new_sku, ingredient.volume_in_store,inventories)
@@ -400,6 +412,10 @@ def send_order_another_group(request_id):
         sku = request_entity.sku_id
         amount = request_entity.amount
         # movemos a despacho
+        '''
+        Chequear si es que podemos moverlo
+        para no completar a medias una orden
+        '''
         productos_movidos = send_to_somewhere(sku, int(amount), almacenes["despacho"])
         # enviamos luego al grupo externo
         for product in productos_movidos:

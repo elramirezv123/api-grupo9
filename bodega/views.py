@@ -1,5 +1,5 @@
 from django.http import JsonResponse
-from .helpers.functions import get_skus_with_stock, send_order_another_group, get_stock_sku, validate_post_body, thread_check, is_our_product, request_sku_extern
+from .helpers.functions import get_skus_with_stock, send_order_another_group, check_almacen,get_stock_sku, validate_post_body, thread_check, is_our_product, request_sku_extern
 from .constants import almacenes, sku_products
 from .models import Request
 from .models import Product, Ingredient, Request
@@ -121,5 +121,5 @@ def orders(request):
 
 
 def test(request):
-    # request_sku_extern('1112', 10, {})
+    print(check_almacen(1016, 1, 'despacho'))
     return JsonResponse({'test': 'working'}, safe=False, status=200)
