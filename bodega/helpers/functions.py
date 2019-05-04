@@ -35,7 +35,14 @@ def get_products_with_sku(almacenId, sku):
     return response.json()
 
 
-
+def get_almacen_info(almacenName):
+    hash = hashQuery("GET")
+    headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
+    response = requests.get(apiURL + "almacenes", headers=headers)
+    for almacen in response.json():
+        if almacen['despacho']:
+            return almacen
+            
 def check_almacen(required_sku, required_amount, almacen_name):
     skus_in_almacen = get_skus_with_stock(almacenes[almacen_name])
     for available_sku in skus_in_almacen:
@@ -415,16 +422,15 @@ def send_order_another_group(request_id, stock):
         '''
         Chequear si es que podemos moverlo
         para no completar a medias una orden
-        '''        
-        if stock[almacenes["despacho"]] + amount <= almacen_stock["despacho"]:          
+        '''
+        if stock[almacenes["despacho"]] + amount <= almacen_stock["despacho"]:
             productos_movidos = send_to_somewhere(sku, int(amount), almacenes["despacho"])
             # enviamos luego al grupo externo
             for product in productos_movidos:
                 move_product_to_another_group(product["_id"], request_entity.store_destination_id)
             # si se envio todo entonces despacho todo entonces seteamos dispatched
             request_entity.update(dispatched=True)
-            
+
         else:
             print("No hay suficiente espacio")
             # hay que ver como reintentar la orden cuando si haya espacio
-
