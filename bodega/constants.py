@@ -93,3 +93,12 @@ prom_request= {
     "1307": [],
     "1211": []
 }
+
+almacen_stock = {
+    "recepcion": 130,
+    "pulmon": 99999999,
+    "cocina": 1099,
+    "libre1": 3142,
+    "libre2": 535, 
+    "despacho": 100
+}

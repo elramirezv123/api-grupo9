@@ -75,13 +75,8 @@ def orders(request):
                 'dispatched' :request_entity.dispatched,
                 'deadline' :request_entity.deadline,
             }
-            ###
-            ######  SIN PROBAR
-
-            #send_order_another_group(request_entity.id)
-
-            ####
-            ######
+            send_order_another_group(request_entity.id)
+      
             return JsonResponse(request_response, safe=False, status=201)
             # check_stock(request_entity.sku_id , request_entity.amount)
         else:

@@ -1,5 +1,5 @@
 from .utils import hashQuery
-from ..constants import apiKey, almacenes, apiURL, headers, minimum_stock, prom_request, DELTA, sku_products, REQUEST_FACTOR
+from ..constants import apiKey, almacenes, almacen_stock, apiURL, headers, minimum_stock, prom_request, DELTA, sku_products, REQUEST_FACTOR
 from ..models import Product, Ingredient, Request
 import requests
 import json
@@ -403,7 +403,7 @@ def send_to_somewhere(sku, cantidad, to_almacen):
                 return producto_movidos
 
 
-def send_order_another_group(request_id):
+def send_order_another_group(request_id, stock):
     #esta funcion mueve el producto a despacho
     # para luego enviar ese producto al grupo que lo pidio
     request_entity = Request.objects.filter(id=int(request_id))
@@ -415,8 +415,16 @@ def send_order_another_group(request_id):
         '''
         Chequear si es que podemos moverlo
         para no completar a medias una orden
-        '''
-        productos_movidos = send_to_somewhere(sku, int(amount), almacenes["despacho"])
-        # enviamos luego al grupo externo
-        for product in productos_movidos:
-            move_product_to_another_group(product["_id"], request_entity.store_destination_id)
+        '''        
+        if stock[almacenes["despacho"]] + amount <= almacen_stock["despacho"]:          
+            productos_movidos = send_to_somewhere(sku, int(amount), almacenes["despacho"])
+            # enviamos luego al grupo externo
+            for product in productos_movidos:
+                move_product_to_another_group(product["_id"], request_entity.store_destination_id)
+            # si se envio todo entonces despacho todo entonces seteamos dispatched
+            request_entity.update(dispatched=True)
+            
+        else:
+            print("No hay suficiente espacio")
+            # hay que ver como reintentar la orden cuando si haya espacio
+
