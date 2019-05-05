@@ -40,9 +40,9 @@ def get_almacen_info(almacenName):
     headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
     response = requests.get(apiURL + "almacenes", headers=headers)
     for almacen in response.json():
-        if almacen['despacho']:
+        if almacen[almacenName]:
             return almacen
-            
+
 def check_almacen(required_sku, required_amount, almacen_name):
     skus_in_almacen = get_skus_with_stock(almacenes[almacen_name])
     for available_sku in skus_in_almacen:
@@ -69,6 +69,7 @@ def move_product_inter_almacen(productId, almacenId):
     headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
     body = {"productoId": productId, "almacenId": almacenId}
     response = requests.post(apiURL + "moveStock", headers=headers, json=body)
+    print(response.json())
     return response.json()
 
 
@@ -382,12 +383,14 @@ def is_our_product(sku):
 
 def get_inventories():
     stock, _ = get_inventory()
+    print(stock)
     return [{"sku": sku, "total": cantidad} for sku,cantidad in _.items()]
 
 def move_products(products, almacenId):
     # Recorre la lista de productos que se le entrega y lo mueve entre almacenes (solo de nosotros)
     producto_movidos = []
     for product in products:
+        print(product)
         producto_movidos.append(product)
         move_product_inter_almacen(product["_id"], almacenId)
     return producto_movidos
@@ -408,6 +411,50 @@ def send_to_somewhere(sku, cantidad, to_almacen):
                     cantidad -= len(products)
             except:
                 return producto_movidos
+
+
+def make_space_in_almacen(almacen_name, to_almacen_name, amount_to_free, banned_sku=[]):
+    '''
+    La idea es hacer un espacio de <amount> en el almacen <almacen_name>
+    parameters:
+        - <almacen_name> (string): Nombre del almacen (despacho, pulmon, etc)
+        - <to_almacen_name> (string): Nombre del almacen de destino (despacho, pulmon, etc)
+        - <amount> (int): cantidad de espacio a liberar
+        - <banned_sku> (lista de ints): sku que no gustaría mover.
+    El parámetro banned_sku es especialmente útil si estamos intentando fabricar un producto
+    y no queremos mover el resto de ingredientes de despacho.
+    returns:
+        - True si es que pudo hacer el espacio
+        - False si es que no pudo hacer el espacio
+    '''
+    if to_almacen_name == 'despacho':
+        # No deberíamos usar despacho para vaciar otros almacenes.
+        # Aparte así es consistente con send_to_somewhere
+        return False
+    almacen_id = almacenes[almacen_name]
+    to_almacen_id = almacenes[to_almacen_name]
+    products = get_skus_with_stock(almacen_id)
+    almacen_sku_dict = { product['_id']: product['total'] for product in products }
+    allowed_skus = list(filter(lambda x: x[0] not in banned_sku, almacen_sku_dict.items()))
+    available_space_to_free = sum(map(lambda x: x[1],allowed_skus), 0)
+    if available_space_to_free >= amount_to_free:
+        # Se puede liberar el espacio que se pide
+        remaining = amount_to_free
+        while remaining > 0:
+            # Elegimos un sku
+            sku = allowed_skus.pop()
+            # print('Sku selected: {}'.format(sku))
+            # Movemos todo de ese sku
+            amount_to_move = min(almacen_sku_dict[sku[0]], remaining)
+            # print('A mover {} de sku {}'.format(amount_to_move, sku[0]))
+            try:
+                amount_moved = len(send_to_somewhere(sku[0], amount_to_move, to_almacen_id))
+            except TypeError:
+                # Si es que send_to_somewhere no retorna una lista (i.e. falló)
+                return False
+            remaining -= amount_moved
+        return True
+    return False
 
 
 def send_order_another_group(request_id, stock):
@@ -432,5 +479,5 @@ def send_order_another_group(request_id, stock):
             request_entity.update(dispatched=True)
 
         else:
-            print("No hay suficiente espacio")
+            make_space_in_almacen('despacho', 'pulmon', amount)
             # hay que ver como reintentar la orden cuando si haya espacio
