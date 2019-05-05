@@ -1,5 +1,5 @@
 from django.http import JsonResponse
-from .helpers.functions import get_skus_with_stock, send_order_another_group,get_stock_sku, validate_post_body, is_our_product, make_space_in_almacen, send_to_somewhere
+from .helpers.functions import get_skus_with_stock, send_order_another_group,get_stock_sku, validate_post_body, is_our_product,request_for_ingredient
 from .constants import almacenes, sku_products
 from .models import Request
 from .models import Product, Ingredient, Request
@@ -116,5 +116,6 @@ def orders(request):
 
 
 def test(request):
-    make_space_in_almacen('despacho', 'pulmon', 1, ['1010'])
+    # current_stocks, current_sku_stocks = get_inventory()
+    # request_for_ingredient('1106', 10, current_sku_stocks, {})
     return JsonResponse({'test': 'working'}, safe=False, status=200)

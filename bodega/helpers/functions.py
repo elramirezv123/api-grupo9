@@ -197,13 +197,14 @@ def request_for_ingredient(sku, pending, current_sku_stocks, inventories):
     # logramos fabricarlos.
     # Si esque no pudimos conseguir todo, veremos primero si esque necesita
     # ingredientes
-    ingredients = Ingredient.objects.filter(sku_product=sku)
+    ingredients = Ingredient.objects.filter(sku_product=int(sku))
     if len(ingredients) > 0:
         # Si esque necesita ingredientes, veremos si los tenemos. Si esque si, enviamos
         # a procesar el producto, si esque no, entonces los pedimos
         for ingredient in ingredients:
             new_sku = ingredient.sku_ingredient.sku
             stock_we_have = current_sku_stocks.get(new_sku, 0)
+            print(stock_we_have)
             if stock_we_have > ingredient.volume_in_store:
                 # Si esque tenemos lo suficiente, lo enviamos a despacho
                 '''
@@ -227,11 +228,10 @@ def request_for_ingredient(sku, pending, current_sku_stocks, inventories):
                 Creo que debería ir el return para terminar esta rama en la recursión.
                 '''
                 return request_for_ingredient(sku, pending, current_sku_stocks, inventories)
-                # return True
 
         # Enviamos a procesar el producto, ya que los ingredientes deberían estar en
         # despacho
-        make_a_product(sku, pending)
+        # make_a_product(sku, pending)
     else:
         '''
         Acá no deberíamos hacer el ingrendiente base? (el que tiene 0 ingredientes para hacerse)
@@ -383,7 +383,6 @@ def is_our_product(sku):
 
 def get_inventories():
     stock, _ = get_inventory()
-    print(stock)
     return [{"sku": sku, "total": cantidad} for sku,cantidad in _.items()]
 
 def move_products(products, almacenId):
