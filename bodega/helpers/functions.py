@@ -178,15 +178,6 @@ def thread_check():
                 '''
                 # make_a_product(sku, cantidad)
 
-            else:
-                # Si estamos ok, entonces los enviamos a despacho y lo enviamos a fabricar
-                '''
-                Por qué a despacho? Acá entra si es que pudimos pedir todo, por qué querríamos fabricar más?
-                Enviaría todo a pulmón (ya que tendría el mínimo del sku)
-                '''
-                send_to_somewhere(sku, cantidad, almacenes["despacho"])
-                make_a_product(sku, cantidad)
-
     for prod in sku_products:
         cantidad = cantidad_a_pedir(prod)
         make_a_product(prod, cantidad)
@@ -198,24 +189,31 @@ def request_for_ingredient(sku, pending, current_sku_stocks, inventories):
     # Si esque no pudimos conseguir todo, veremos primero si esque necesita
     # ingredientes
     ingredients = Ingredient.objects.filter(sku_product=int(sku))
+    print("Ingredientes: ", ingredients)
     if len(ingredients) > 0:
         # Si esque necesita ingredientes, veremos si los tenemos. Si esque si, enviamos
         # a procesar el producto, si esque no, entonces los pedimos
         for ingredient in ingredients:
+            print("INGREDIENTE: ", ingredient, ingredient.sku_product.sku, ingredient.sku_ingredient.sku)
             new_sku = ingredient.sku_ingredient.sku
             stock_we_have = current_sku_stocks.get(new_sku, 0)
-            print(stock_we_have)
+            print("STOCK QUE TENEMOS: ", stock_we_have)
             if stock_we_have > ingredient.volume_in_store:
                 # Si esque tenemos lo suficiente, lo enviamos a despacho
                 '''
                 Podríamos chequear si es que hay en despcho antes de mover las cosas
-                para no sobrecargar despacho (además, es más rápido).
+                para no sobrecargar despacho (además, es más rápido) (ESTÁ READY)
                 '''
                 in_despacho = check_almacen(new_sku, ingredient.volume_in_store, 'despacho')
                 if not in_despacho:
                     # Habría que hacer espacio en despacho.
                     send_to_somewhere(new_sku, ingredient.volume_in_store, almacenes["despacho"])
             else:
+                # Si esque el producto lo fabricamos nosotros, envia a fabricar 
+                if new_sku in sku_products:
+                    return make_a_product(new_sku, ingredient.volume_in_store)
+                        # Habría que hacer espacio en despacho.
+                    
                 # Si esque no tenemos suficiente, pedimos a los otros grupos
                 is_ok, pending = request_sku_extern(new_sku, ingredient.volume_in_store,inventories)
                 if not is_ok:
@@ -227,7 +225,8 @@ def request_for_ingredient(sku, pending, current_sku_stocks, inventories):
                 Se pudo pedir (no hay pending). Intentemos hacer sku de nuevo
                 Creo que debería ir el return para terminar esta rama en la recursión.
                 '''
-                return request_for_ingredient(sku, pending, current_sku_stocks, inventories)
+                # request_for_ingredient(sku, pending, current_sku_stocks, inventories)
+                return 
 
         # Enviamos a procesar el producto, ya que los ingredientes deberían estar en
         # despacho
@@ -235,8 +234,9 @@ def request_for_ingredient(sku, pending, current_sku_stocks, inventories):
     else:
         '''
         Acá no deberíamos hacer el ingrendiente base? (el que tiene 0 ingredientes para hacerse)
+        '''  
+        print("MANDO A PRODUCIR", sku)
         make_a_product(sku, pending)
-        '''
         return
 
 
@@ -312,8 +312,9 @@ def get_sku_stock_extern(group_number, sku, inventories):
                         if sku == gotcha:
                             print("gotcha {}, sku: {}".format(gotcha, sku))
                             return product["total"]
-                    else:
-                        return False
+                return False
+            else:
+                return False
         except Exception as err:
             print("otro error: ", err)
             return False
@@ -354,7 +355,7 @@ def request_sku_extern(sku, quantity, inventories):
             available = get_sku_stock_extern(group, sku, inventories)
             print("available: ", available)
             if available:
-                to_order = min(pending, float(available))
+                to_order = int(min(pending, float(available)/2))
                 print(to_order)
                 response = place_order_extern(group, sku, to_order)
                 try:
