@@ -26,7 +26,7 @@ SECRET_KEY = 'vxhh*2)x^98vo5kd9vu*32(+wvd6z@$cbf27dc1)46%(+3-upm'
 DEBUG = True
 
 if DEBUG:
-    ALLOWED_HOSTS = [*]
+    ALLOWED_HOSTS = ["*"]
 else:
     ALLOWED_HOSTS = ['tuerca9.ing.puc.cl']
     
@@ -85,14 +85,24 @@ WSGI_APPLICATION = 'api_config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': "apidb",
-        'USER': "grupo9",
+        'NAME': "dbg9",
+        'USER': "ale",
         'PASSWORD': "password",
         'HOST': "localhost",
-        'PORT': 5432
+        'PORT': 5433
     }
 }
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
+#         'NAME': "dbg9",
+#         'USER': os.environ.get("DB_USER"),
+#         'PASSWORD': os.environ.get("DB_PASS"),
+#         'HOST': "localhost",
+#         'PORT': 5432
+#     }
+# }
 
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators

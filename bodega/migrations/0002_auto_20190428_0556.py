@@ -21,18 +21,14 @@ def populate_products(apps, schema_editor):
     product_model = apps.get_model('bodega', 'Product')
     for product in data:
         product = product_model.objects.create(sku=int(product['sku']),
-                                               name=product['nombre'],
-                                               description=product['descripcion'],
-                                               slug=slugify(product['nombre']),
                                                price=int(
-                                                   product['precio'][1:].replace(',', "")) if product['precio'] else None,
+                                                   product['precio'][1:].replace(',', "")) if product['precio'] else 0,
                                                duration=float(
                                                    product['duracion']),
-                                               equivalence=float(
-                                                   product['equivalencia']),
-                                               unit=product['unidad'],
                                                batch=int(product['lote']),
-                                               production_time=int(product['tiempo_esperado']))
+                                               used_by=int(product["usado_por"]),
+                                               production_time=int(product['tiempo_esperado']),
+                                               productors=",".join(product["grupos_productores"]))
         product.save()
     
     for line in ingredients_data:
@@ -40,9 +36,7 @@ def populate_products(apps, schema_editor):
         ingredient_instance = Product.objects.get(pk=int(line[2]))
         new_ingredient = Ingredient.objects.create(sku_product=product_instance,
                                                    sku_ingredient=ingredient_instance,
-                                                   quantity = float(line[4]),
                                                    production_batch=int(line[6]),
-                                                   quantity_batch=float(line[7]),
                                                    volume_in_store=int(float(line[9])))
         new_ingredient.save()
                 

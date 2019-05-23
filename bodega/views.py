@@ -1,11 +1,11 @@
 from django.http import JsonResponse
-from .helpers.functions import get_skus_with_stock, get_stock_sku, validate_post_body, thread_check, is_our_product, get_inventories, get_inventary
+from .helpers.functions import get_skus_with_stock, send_order_another_group,get_stock_sku, validate_post_body, is_our_product,request_for_ingredient
 from .constants import almacenes, sku_products
 from .models import Request
-from .models import Product
+from .models import Product, Ingredient, Request
 import json
 from django.views.decorators.csrf import csrf_exempt
-from .helpers.functions import get_request_body, get_inventary
+from .helpers.functions import get_request_body, get_inventory, get_inventories, request_sku_extern, thread_check
 from datetime import datetime
 from datetime import timedelta
 
@@ -38,12 +38,6 @@ def inventories(request):
     return JsonResponse(response, safe=False)
 
 
-def new_order(request):
-    # Debe ser metodo POST
-    if request.method == 'POST':
-        pass
-
-
 @csrf_exempt
 def orders(request):
     # Debe ser método POST y UPDATE
@@ -55,11 +49,15 @@ def orders(request):
         '''
         req_body = get_request_body(request)
         req_sku = req_body['sku']
+        try:
+            req_sku = int(req_sku)
+        except:
+            return JsonResponse({'error': "SKU NO SE PUEDE TRANSFORMAR A ENTERO (INT)"}, safe=False, status=400)
         if not is_our_product(req_sku):
             return JsonResponse({'error': 'Sku is not produced by us'}, safe=False, status=400)
-        _, sku_stock_dict = get_inventary()
-
-        if req_sku not in list(map(lambda x: int(x), sku_stock_dict)):
+        stock, sku_stock_dict = get_inventory()
+        lista = list(map(lambda x: int(x), sku_stock_dict))
+        if req_sku not in lista or int(sku_stock_dict[str(req_sku)]) < int(req_body['cantidad']):
             return JsonResponse({'error': "We don't have stock of that sku. Sorry"}, safe=False, status=400)
         if validate_post_body(req_body):
             request_deadline = datetime.now() + timedelta(days=10)
@@ -71,11 +69,14 @@ def orders(request):
             request_entity.save()
             request_response = {
                 'id' :request_entity.id,
+                'cantidad': request_entity.amount,
                 'storeDestinationId' :request_entity.store_destination_id,
                 'accepted' :request_entity.accepted,
                 'dispatched' :request_entity.dispatched,
                 'deadline' :request_entity.deadline,
             }
+            send_order_another_group(request_entity.id)
+
             return JsonResponse(request_response, safe=False, status=201)
             # check_stock(request_entity.sku_id , request_entity.amount)
         else:
@@ -89,11 +90,10 @@ def orders(request):
         req_sku = req_body['sku']
         if not is_our_product(req_sku):
             return JsonResponse({'error': 'Sku is not produced by us'}, safe=False, status=400)
-        _, sku_stock_dict = get_inventary()
-
-        if req_sku not in list(map(lambda x: int(x), sku_stock_dict)):
+        _, sku_stock_dict = get_inventory()
+        if req_sku not in lista or int(sku_stock_dict[str(req_sku)]) < int(req_body['cantidad']):
             return JsonResponse({'error': "We don't have stock of that sku. Sorry"}, safe=False, status=400)
-            
+
         request_id = req_body['pedido_id']
         request_deadline = datetime.strptime(req_body['deadline'], '%Y-%m-%d')
         request_entity = Request.objects.filter(id=int(request_id))
@@ -113,3 +113,10 @@ def orders(request):
         print(thread_check())
         return JsonResponse({'data': 'hola'}, safe=False)
     return JsonResponse({'error': {'type': 'Method not implemented'}}, safe=False, status=404)
+
+
+def test(request):
+    thread_check()
+    # current_stocks, current_sku_stocks = get_inventory()
+    # request_for_ingredient('1106', 10, current_sku_stocks, {})
+    return JsonResponse({'test': 'working'}, safe=False, status=200)
