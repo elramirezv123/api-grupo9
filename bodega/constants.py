@@ -3,6 +3,7 @@
 prod = False
 apiKey = "R&FTHQi3AkqUx%6"
 apiURL = "https://integracion-2019-dev.herokuapp.com/bodega/"
+ocURL = "https://integracion-2019-dev.herokuapp.com/oc/docs/"
 
 # PRODUCTION
 # apiKey = "R&FTHQi3AkqUx%6"
