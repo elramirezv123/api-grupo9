@@ -34,12 +34,16 @@ def get_products_with_sku(almacenId, sku):
         apiURL + "stock?almacenId={}&sku={}".format(almacenId, sku), headers=headers)
     return response.json()
 
-
-def get_almacen_info(almacenName):
+def get_almacenes():
     hash = hashQuery("GET")
     headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
     response = requests.get(apiURL + "almacenes", headers=headers)
-    for almacen in response.json():
+    return response.json()
+
+
+def get_almacen_info(almacenName):
+    response = get_almacenes()
+    for almacen in response:
         if almacen[almacenName]:
             return almacen
 

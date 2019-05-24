@@ -1,11 +1,11 @@
 from django.http import JsonResponse
-from .helpers.functions import get_skus_with_stock, send_order_another_group,get_stock_sku, validate_post_body, is_our_product,request_for_ingredient
-from .constants import almacenes, sku_products
-from .models import Request
-from .models import Product, Ingredient, Request
+from ..helpers.functions import get_skus_with_stock, send_order_another_group,get_stock_sku, validate_post_body, is_our_product,request_for_ingredient
+from ..constants import almacenes, sku_products
+from ..models import Request
+from ..models import Product, Ingredient, Request
 import json
 from django.views.decorators.csrf import csrf_exempt
-from .helpers.functions import get_request_body, get_inventory, get_inventories, request_sku_extern, thread_check
+from ..helpers.functions import get_request_body, get_inventory, get_inventories, request_sku_extern, thread_check
 from datetime import datetime
 from datetime import timedelta
 

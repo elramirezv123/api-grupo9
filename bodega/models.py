@@ -6,13 +6,15 @@ from django.template.defaultfilters import slugify
 
 class Product(models.Model):
     sku = models.IntegerField(primary_key=True)
+    name = models.CharField(max_length=100)
     price = models.IntegerField(default=0)
     used_by = models.IntegerField()
     duration = models.DecimalField(decimal_places=2, max_digits=6)
     batch = models.IntegerField()
     production_time = models.IntegerField()
     productors = models.CharField(max_length=100)
-    ingredients = models.ManyToManyField("self", related_name='ingredientes', symmetrical=False, through="Ingredient")
+    ingredients = models.ManyToManyField("self", related_name='ingredientes', symmetrical=False, through="Ingredient", through_fields=("sku_ingredient", "sku_product"))
+
 
 class Ingredient(models.Model):
     sku_product = models.ForeignKey(Product, on_delete=models.CASCADE,

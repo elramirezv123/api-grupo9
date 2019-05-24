@@ -21,6 +21,7 @@ def populate_products(apps, schema_editor):
     product_model = apps.get_model('bodega', 'Product')
     for product in data:
         product = product_model.objects.create(sku=int(product['sku']),
+                                               name = product['nombre'],
                                                price=int(
                                                    product['precio'][1:].replace(',', "")) if product['precio'] else 0,
                                                duration=float(

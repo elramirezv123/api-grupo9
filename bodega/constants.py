@@ -1,11 +1,12 @@
 # Constantes útiles
 # DEV
-# apiKey = "R&FTHQi3AkqUx%6"
-# apiURL = "https://integracion-2019-dev.herokuapp.com/bodega/"
+prod = False
+apiKey = "R&FTHQi3AkqUx%6"
+apiURL = "https://integracion-2019-dev.herokuapp.com/bodega/"
 
 # PRODUCTION
-apiKey = "R&FTHQi3AkqUx%6"
-apiURL = "https://integracion-2019-prod.herokuapp.com/bodega/"
+# apiKey = "R&FTHQi3AkqUx%6"
+# apiURL = "https://integracion-2019-prod.herokuapp.com/bodega/"
 
 
 # Umbral, se pedirá si es que tenemos menos de stock_minimo + DELTA
@@ -21,6 +22,7 @@ REQUEST_FACTOR = 10
 #     "pulmon":"5cbd3ce444f67600049431e7",
 #     "cocina": "5cbd3ce444f67600049431e8",
 #     "libre1": "5cbd3ce444f67600049431e5",
+#     "libre2": "5cbd3ce444f67600049431e6",
 #     "despacho":"5cbd3ce444f67600049431e4",
 # }
 
