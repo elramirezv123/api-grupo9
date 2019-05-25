@@ -1,6 +1,8 @@
-from .utils import hashQuery
-from ..constants import apiKey, almacenes, almacen_stock, apiURL, headers, minimum_stock, prom_request, DELTA, sku_products, REQUEST_FACTOR
-from ..models import Product, Ingredient, Request, Purchase_Order
+from bodega.constants.logic_constants import almacen_stock, headers, minimum_stock, prom_request, DELTA, sku_products, REQUEST_FACTOR
+from bodega.constants.config import almacenes
+from bodega.models import Product, Ingredient, Request, Purchase_Order
+from bodega.helpers.bodega_functions import get_skus_with_stock, get_almacenes, get_products_with_sku, send_product
+from bodega.helpers.bodega_functions import make_a_product, move_product_inter_almacen, move_product_to_another_group
 import requests
 import json
 import os
@@ -10,38 +12,6 @@ import datetime
 
 PRODUCTS_JSON_PATH = os.path.abspath(os.path.join(
     os.path.dirname(__file__), '..', '..', 'productos.json'))
-
-'''
-Estas son funciones útiles para hacer las llamadas a la API del profe.
-'''
-
-# Funcions útiles para bodega
-
-def get_skus_with_stock(almacenId):
-    # Esta funcion permite obtener todos los sku no vencidos de algún almacén
-    hash = hashQuery("GET"+almacenId)
-    headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
-    response = requests.get(
-        apiURL + "skusWithStock?almacenId={}".format(almacenId), headers=headers)
-    return response.json()
-
-
-def get_products_with_sku(almacenId, sku):
-    # Esta función permite obtener los primeros 100 productos (default) no vencidos
-    # de algún almacén con algun sku.
-    hash = hashQuery("GET"+almacenId+sku)
-    headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
-    response = requests.get(
-        apiURL + "stock?almacenId={}&sku={}".format(almacenId, sku), headers=headers)
-    return response.json()
-
-
-def get_almacenes():
-    hash = hashQuery("GET")
-    headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
-    response = requests.get(apiURL + "almacenes", headers=headers)
-    return response.json()
-
 
 def get_almacen_info(almacenName):
     response = get_almacenes()
@@ -59,89 +29,13 @@ def check_almacen(required_sku, required_amount, almacen_name):
     return False
 
 
-def send_product(productId, oc, address, price):
-    # Despacha un producto no vencido presenta en la bodega de
-    # despacho a la dirección indicada.
-    hash = hashQuery("DELETE"+productId+address+price+oc)
-    headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
-    body = {"productoId": productId, "oc": oc,
-            "direccion": address, "precio": int(price)}
-    response = requests.delete(apiURL + "stock", headers=headers, json=body)
-    return response.json()
-
-
-def move_product_inter_almacen(productId, almacenId):
-    # Mueve un producto de un almacén a otro dentro de una misma bodega.
-    hash = hashQuery("POST"+productId+almacenId)
-    headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
-    body = {"productoId": productId, "almacenId": almacenId}
-    response = requests.post(apiURL + "moveStock", headers=headers, json=body)
-    print(response.json())
-    return response.json()
-
-
-def move_product_to_another_group(productId, almacenId):
-    # Mueve un producto no vencido desde un almacén de despacho de un grupo
-    # a un almacén de recepcion de otro grupo.
-    # En caso que almacén de recepción se encuentre lleno, los productos quedan en almacén pulmón.
-    hash = hashQuery("POST"+productId+almacenId)
-    headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
-    body = {"productoId": productId, "almacenId": almacenId}
-    response = requests.post(apiURL + "moveStockBodega",
-                             headers=headers, json=body)
-
-    return response.json()
-
-
-# Funciones útiles para fábricar productos
-
-
-def make_a_product(sku, quantity):
-    # OJO: Este servicio será deprecado.
-    # A través de este servicio se envían a fabricar productos con o sin materias primas.
-    # Este servicio no requiere realizar el pago de la fabricación.
-    hash = hashQuery("PUT"+str(sku)+str(quantity))
-    headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
-    body = {"sku": str(sku), "cantidad": quantity}
-    response = requests.put(
-        apiURL + "fabrica/fabricarSinPago", headers=headers, json=body)
-    return response.json()
-
-# Funcions utiles para la recepción de productos
-
-
-def set_hook(url):
-    # Setea la url para el hook de recepción de productos.
-    # En caso de estar seteada anteriormente, se actualiza el valor.
-    hash = hashQuery("PUT"+url)
-    headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
-    body = {"url": url}
-    response = requests.put(apiURL + "hook", headers=headers, json=body)
-    return response.json()
-
-
-def get_hook():
-    hash = hashQuery("GET")
-    headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
-    response = requests.get(apiURL + "hook", headers=headers)
-    return response.json()
-
-
-def delete_hook(url):
-    hash = hashQuery("DELETE")
-    headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
-    response = requests.delete(apiURL + "hook", headers=headers)
-    return response.json()
-
-
 def get_request_body(request):
     body_unicode = request.body.decode('utf-8')
     return json.loads(body_unicode)
 
 
-
 def get_inventory():
-    #con esta funcion obtengo todo el stock de todos los sku para cada lmacen
+    #Con esta funcion obtengo todo el stock de todos los sku para cada almacén
     '''
     current_stocks: {'almacenId': [{sku: <cantidad>}]} (cantidad por almacen)
     current_sku_stocks: {sku: <cantidad>} (cantidad total por sku)
@@ -157,36 +51,6 @@ def get_inventory():
         current_stocks[almacen] = dict_sku
     return current_stocks, current_sku_stocks
 
-
-# esta funcion chequea inventario constantemente y manda a fabricar si es necesario
-# # esta funcion es a la que hay que aplicarle celery
-# def thread_check():
-#     current_stocks, current_sku_stocks = get_inventory()
-#     print("current stock: ", current_sku_stocks)
-#     minimum_stock_list = list(minimum_stock.keys())
-#     random.shuffle(minimum_stock_list)
-#     inventories = {}
-#     for sku in minimum_stock_list:
-#         print("SKU a preguntar: ", sku)
-#         # Revisamos todos los minimos
-#         product_current_stock = current_sku_stocks.get(sku, 0)
-#         if product_current_stock < minimum_stock[sku] + DELTA:
-#             cantidad = cantidad_a_pedir(sku)
-#             # Revisamos en los otros grupos si esque lo podemos pedir, si esque no
-#             # entonces revisar si lo podemos fabricar con lo que tenemos
-#             is_ok, pending = request_sku_extern(sku, cantidad, inventories)
-#             if not is_ok:
-#                 request_for_ingredient(sku, pending, current_sku_stocks, inventories)
-#                 # maked = request_for_ingredient(sku, pending, current_sku_stocks, inventories)
-#                 '''
-#                 Aquí yo intentaría hacerlo no más para esta entrega, como se puede
-#                 fabricar sin materia prima.
-#                 '''
-#                 # make_a_product(sku, cantidad)
-
-#     for prod in sku_products:
-#         cantidad = cantidad_a_pedir(prod)
-#         make_a_product(prod, cantidad)
 
 def thread_check_2():
     '''

@@ -1,6 +1,6 @@
 from .utils import hashQuery
-from ..constants import almacenes, almacen_stock, minimum_stock, prom_request, DELTA, sku_products, REQUEST_FACTOR
-from ..constants import ocURL, headers
+from bodega.constants.logic_constants import almacen_stock, minimum_stock, prom_request, DELTA, sku_products, REQUEST_FACTOR
+from bodega.constants.config import ocURL, headers, almacenes
 import requests
 import json
 

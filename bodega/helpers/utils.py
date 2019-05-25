@@ -2,7 +2,7 @@ import base64
 import hmac
 import hashlib
 import urllib
-from ..constants import apiKey
+from bodega.constants.config import apiKey
 
 '''
 Este módulo es para las funciones que son transversalmente útiles para
