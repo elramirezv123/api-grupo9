@@ -1,11 +1,11 @@
 from django.http import JsonResponse
-from ..helpers.functions import get_skus_with_stock, send_order_another_group,get_stock_sku, validate_post_body, is_our_product,request_for_ingredient
+from ..helpers.functions import get_skus_with_stock, send_order_another_group,get_stock_sku, validate_post_body, is_our_product,request_for_ingredient2
 from ..constants import almacenes, sku_products
 from ..models import Request
 from ..models import Product, Ingredient, Request
 import json
 from django.views.decorators.csrf import csrf_exempt
-from ..helpers.functions import get_request_body, get_inventory, get_inventories, request_sku_extern, thread_check
+from ..helpers.functions import get_request_body, get_inventory, get_inventories, request_sku_extern, thread_check_2
 from datetime import datetime
 from datetime import timedelta
 
@@ -110,13 +110,13 @@ def orders(request):
             'deadline' :request_entity.deadline,
         }, safe=False, status=200)
     elif request.method == 'GET':
-        print(thread_check())
+        print(thread_check_2())
         return JsonResponse({'data': 'hola'}, safe=False)
     return JsonResponse({'error': {'type': 'Method not implemented'}}, safe=False, status=404)
 
 
 def test(request):
-    thread_check()
+    thread_check_2()
     # current_stocks, current_sku_stocks = get_inventory()
     # request_for_ingredient('1106', 10, current_sku_stocks, {})
     return JsonResponse({'test': 'working'}, safe=False, status=200)

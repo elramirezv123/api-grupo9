@@ -1,11 +1,12 @@
 from .utils import hashQuery
 from ..constants import apiKey, almacenes, almacen_stock, apiURL, headers, minimum_stock, prom_request, DELTA, sku_products, REQUEST_FACTOR
-from ..models import Product, Ingredient, Request
+from ..models import Product, Ingredient, Request, Purchase_Order
 import requests
 import json
 import os
 import time
 import random
+import datetime
 
 PRODUCTS_JSON_PATH = os.path.abspath(os.path.join(
     os.path.dirname(__file__), '..', '..', 'productos.json'))
