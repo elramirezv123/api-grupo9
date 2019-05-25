@@ -3,7 +3,7 @@ from django.shortcuts import render
 from django import template
 from bodega.helpers.functions import get_almacenes, get_inventory
 from bodega.models import Product, Ingredient
-from bodega.constants import prod
+from bodega.constants.config import prod
 
 
 def almacenes_info(request):

@@ -1,6 +1,6 @@
 from .utils import hashQuery
-from bodega.constants.config import apiKey, apiURL
-from bodega.constants.logic_constants import almacenes, headers
+from bodega.constants.config import apiKey, apiURL, almacenes
+from bodega.constants.logic_constants import headers
 import requests
 
 # Funcions útiles para bodega
