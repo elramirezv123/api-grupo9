@@ -42,3 +42,12 @@ class Request(models.Model):
     def __str__(self):
         """A string representation of the model."""
         return str(self.sku_id) + str(self.amount)
+
+
+class Purchase_Order(models.Model):
+    product_sku = models.IntegerField
+    ingre_sku = models.IntegerField
+    amount = models.CharField(max_length=255)
+    accepted = models.BooleanField(default=False)  
+    received = models.BooleanField(default=False)  #debo chequear esto de alguna forma
+    deadline = models.DateField(null=True)  #maximo tiempo de espera
