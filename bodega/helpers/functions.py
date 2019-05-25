@@ -35,6 +35,7 @@ def get_products_with_sku(almacenId, sku):
         apiURL + "stock?almacenId={}&sku={}".format(almacenId, sku), headers=headers)
     return response.json()
 
+
 def get_almacenes():
     hash = hashQuery("GET")
     headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
@@ -47,6 +48,7 @@ def get_almacen_info(almacenName):
     for almacen in response:
         if almacen[almacenName]:
             return almacen
+
 
 def check_almacen(required_sku, required_amount, almacen_name):
     skus_in_almacen = get_skus_with_stock(almacenes[almacen_name])
@@ -114,21 +116,21 @@ def set_hook(url):
     hash = hashQuery("PUT"+url)
     headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
     body = {"url": url}
-    response = request.put(apiURL + "hook", headers=headers, json=body)
+    response = requests.put(apiURL + "hook", headers=headers, json=body)
     return response.json()
 
 
 def get_hook():
     hash = hashQuery("GET")
     headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
-    response = request.get(apiURL + "hook", headers=headers)
+    response = requests.get(apiURL + "hook", headers=headers)
     return response.json()
 
 
 def delete_hook(url):
     hash = hashQuery("DELETE")
     headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
-    response = request.delete(apiURL + "hook", headers=headers)
+    response = requests.delete(apiURL + "hook", headers=headers)
     return response.json()
 
 
@@ -154,7 +156,6 @@ def get_inventory():
             current_sku_stocks[stock['_id']] = stock['total'] + current_sku_stocks.get(stock["_id"], 0)
         current_stocks[almacen] = dict_sku
     return current_stocks, current_sku_stocks
-
 
 
 # esta funcion chequea inventario constantemente y manda a fabricar si es necesario
@@ -187,32 +188,28 @@ def get_inventory():
 #         cantidad = cantidad_a_pedir(prod)
 #         make_a_product(prod, cantidad)
 
-
 def thread_check_2():
+    '''
+    current_stocks: {'almacenId': [{sku: <cantidad>}]} (cantidad por almacen)
+    current_sku_stocks: {sku: <cantidad>} (cantidad total por sku)
+    '''
     current_stocks, current_sku_stocks = get_inventory()
     print("current stock: ", current_sku_stocks)
-    minimum_stock_list = list(minimum_stock.keys())
+    minimum_stock_list = list(minimum_stock.keys())  #en batches
     random.shuffle(minimum_stock_list)
     inventories = {}
     for sku in minimum_stock_list:
-        print("SKU a preguntar: ", sku)
-        # Revisamos todos los minimos
-        product_current_stock = current_sku_stocks.get(sku, 0)
-        if product_current_stock < minimum_stock[sku] + DELTA:
-            if sku < 10000:
-                cantidad = (minimum_stock[sku] + DELTA) - product_current_stock
-                #-------->FALTA VER SI PEDIREMOS TODA LA CANTIDAD O POR LOTES
-                is_ok, pending = request_sku_extern(sku, cantidad, inventories)
+        if sku < 10000:
+            print("SKU a preguntar: ", sku)
+            product_current_stock = current_sku_stocks.get(sku)
+            if product_current_stock < minimum_stock[sku] + DELTA:        
+                cantidad_faltante = (minimum_stock[sku] + DELTA) - product_current_stock
+                is_ok, pending = request_sku_extern(sku, cantidad_faltante, inventories)  #inventories queda poblado
                 if not is_ok:
                     # VERIFICAMOS SI TENEMOS SUS INGREDIENTES    
                     # PENDING ES LA CANTIDAD QUE NO PUDE PEDIR              
                     request_for_ingredient2(sku, pending, current_sku_stocks, inventories)
-                
-
-    for prod in sku_products:
-        cantidad = cantidad_a_pedir(prod)
-        make_a_product(prod, cantidad)
-
+                    
 
 def request_for_ingredient2(sku, pending, current_sku_stocks, inventories):
     # OBTENEMOS LOS INGREDIENTES E ITERAMOS SOBRE ELLOS
@@ -227,33 +224,47 @@ def request_for_ingredient2(sku, pending, current_sku_stocks, inventories):
         for ing in ingredients:
             # estos ingredientes seran si o si de nivel 100, por lo que no son compuestos
             print("VERIFICANDO INGREDIENTE: ", ing.sku_product.sku, ing.sku_ingredient.sku)
-            ingre_sku = ing.sku_ingredient.sku
-            stock_we_have = current_sku_stocks.get(ingre_sku, 0)
+            ingre_sku = ing.sku_ingredient.sku  #obtenemos el sku del ingrediente
+            stock_we_have = current_sku_stocks.get(ingre_sku)
             print("STOCK QUE TENEMOS: ", stock_we_have)
             # volume in store almacena la cantidad de ese ingrediente por producto
             # GUARDO PARA CUANTOS BATCH del producto ME ALCANZAN ESE INGREDIENTE
-            check_ingre[ingre_sku] = stock_we_have % ing.volume_in_store
+            check_ingre[ingre_sku] = int(stock_we_have / ing.volume_in_store)
         
         # una vez chequeo todos, obtengo la maxima cantidad de bach que podre producir
         max_cant_producible = min(check_ingre.values())        
         # verifico si alcanza
         # mando a  producir el minimo entre max_cant y pending
         cant_a_producir = min(pending, max_cant_producible)
+        # MANDO A PRODUCIR LA cantidad_a_producir
+        # UN BATCH A LA VEZ PARA NO LLENAR DESPACHO
+        # ASUMO QUE DESPACHO ESTA VACIO
+        copy_new_pending = cant_a_producir #en batch
+        while copy_new_pending > 0:
+            for ing in ingredients:
+                ing_sku = ing.sku_ingredient.sku               
+                # MOVEMOS A DESPACHO LO NECESARIO PARA UN BATCH
+                send_to_somewhere(ing_sku, ing.volume_in_store, almacenes["despacho"])   
+            # UNA VEZ TODOS EN DESPACHO, MANDO A PRODUCIR
+            produ = Product.objects.filter(sku=int(sku))
+            make_a_product(sku, produ.batch)
+            copy_new_pending -= 1  
         if cant_a_producir < pending:
+            new_pending = pending - max_cant_producible
             # NO ALCANZA
-            # NUEVO PENDING
-            new_pending = pending - max_cant_producible         
             for ing_sku in check_ingre:
                 # ACTUALIZO
-                check_ingre[ing_sku] -= max_cant_producible          
+                check_ingre[ing_sku] -= max_cant_producible  #saco los ingredientes que se usaron
+                # AHORA REVISO POR INGREDIENTE SI ME ALCANZA PARA EL RESTO DE LOS BATCH          
                 if check_ingre[ing_sku] < new_pending:
                     # NO ME ALCANZA EL INGREDIENTE PARA PRODUCIR LO QUE NECESITO
                     # VERIFICAMOS SI YO LO PRODUZCO
                     if ing_sku in sku_products: 
-                        # LO PRODUZCO DIRECTAMENTE YA QUE ES NIVEL 100
-                        #MANDO A PRODUCIR todo LO QUE NECESITO YA QUE ES DE NIVEL 100
+                        # SI LO PRODUZCO
+                        # MANDO A PRODUCIR TOD LO QUE NECESITO YA QUE ES DE NIVEL 100
                         make_a_product(ing_sku, check_ingre[ing_sku])
                     else:
+                        # NO ES NUESTRO
                         # ENTONCES DEBEMOS PEDIR LO QUE NOS FALTA PARA COMPLETAR
                         # VERIFICAMOS SI YA LO PEDIMOS, HACIENDO LA SUMA DE LOS PEDIDOS
                         pedidos = Purchase_Order.objects.filter(product_sku=int(sku),ingre_sku=int(sku))
@@ -262,34 +273,25 @@ def request_for_ingredient2(sku, pending, current_sku_stocks, inventories):
                             if ped.deadline > datetime.datetime.now():
                                 cant += ped.amount
                             else:
+                                # YA PASO SU HORA, HAY QUE BORRARLO
                                 ped.delete()
                         cantidad_ingrediente_a_pedir = pending - cant
-                        is_ok, pending = request_sku_extern(ing_sku, cantidad_ingrediente_a_pedir, inventories)
-                        if pending:
-                            # SOLO QUEDA LLORAR
-                            # AUNQUE QUIZAS SE PODRIA REINTENTAR EN UNOS MINUTOS MAS
-                            pass
-        else:
-            # SI ALCANZA, ENTONCES MANDO A DESPACHO Y LUEGO A PRODUCIR,
-            # UN BATCH A LA VEZ PARA NO LLENAR DESPACHO
-            # ASUMO QUE DESPACHO ESTA VACIO
-            copy_new_pending = new_pending  #en batch
-            while copy_new_pending > 0:
-                for ing in ingredients:
-                    ing_sku = ing.sku_ingredient.sku               
-                    # MOVEMOS A DESPACHO LO NECESARIO PARA UN BATCH
-                    send_to_somewhere(ing_sku, ing.volume_in_store, almacenes["despacho"])   
-                # UNA VEZ TODOS EN DESPACHO, MANDO A PRODUCIR
-                make_a_product(sku, check_ingre[ing_sku])
-                copy_new_pending -= 1
+                        if cantidad_ingrediente_a_pedir > 0:
+                            is_ok, pending = request_sku_extern(ing_sku, cantidad_ingrediente_a_pedir, inventories)
+                            if pending:
+                                # SOLO QUEDA LLORAR
+                                # AUNQUE QUIZAS SE PODRIA REINTENTAR EN UNOS MINUTOS MAS
+                                pass
+            
     else: # es de nivel 100
-        #CHEQUEAMOS CUANTO NOS FALTA 
+        # CHEQUEAMOS CUANTO NOS FALTA 
         # VEMOS SI LO PRODUCIMOS
         if sku in sku_products: 
-            # LO PRODUZCO DIRECTAMENTE YA QUE ES NIVEL 100
-            #MANDO A PRODUCIR todo LO QUE NECESITO YA QUE ES DE NIVEL 100
+            # ES NUESTRO
+            # MANDO A PRODUCIR todo LO QUE NECESITO YA QUE ES DE NIVEL 100
             make_a_product(sku, pending)
         else:
+            # NO ES NUESTRO
             # ENTONCES DEBEMOS PEDIR LO QUE NOS FALTA PARA COMPLETAR
             # VERIFICAMOS SI YA LO PEDIMOS, HACIENDO LA SUMA DE LOS PEDIDOS
             pedidos = Purchase_Order.objects.filter(product_sku=int(sku),ingre_sku=int(sku))
@@ -299,7 +301,7 @@ def request_for_ingredient2(sku, pending, current_sku_stocks, inventories):
                     cant += ped.amount
                 else:
                     ped.delete()
-            cantidad_ingrediente_a_pedir = pending - cant
+            cantidad_ingrediente_a_pedir = pending - cant  # LO QUE AUN NO SE HA PEDIDO
             is_ok, pending2 = request_sku_extern(sku, cantidad_ingrediente_a_pedir, inventories)
             if pending2:
                 # SOLO QUEDA LLORAR

@@ -47,7 +47,7 @@ class Request(models.Model):
 class Purchase_Order(models.Model):
     product_sku = models.IntegerField
     ingre_sku = models.IntegerField
-    amount = models.CharField(max_length=255)
+    amount = models.IntegerField
     accepted = models.BooleanField(default=False)  
     received = models.BooleanField(default=False)  #debo chequear esto de alguna forma
     deadline = models.DateField(null=True)  #maximo tiempo de espera

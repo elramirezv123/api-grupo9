@@ -42,6 +42,7 @@ headers = {'Content-Type': 'application/json'}
 
 sku_products = [1001, 1009, 1010, 1014, 1016]
 
+# esta en lotes, no en cantidades
 minimum_stock = {
     "1301": 50,
     "1201": 250,
