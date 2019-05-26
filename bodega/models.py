@@ -44,10 +44,18 @@ class Request(models.Model):
         return str(self.sku_id) + str(self.amount)
 
 
-class Purchase_Order(models.Model):
-    product_sku = models.IntegerField
-    ingre_sku = models.IntegerField
-    amount = models.IntegerField
-    accepted = models.BooleanField(default=False)  
-    received = models.BooleanField(default=False)  #debo chequear esto de alguna forma
-    deadline = models.DateField(null=True)  #maximo tiempo de espera
+class PurchaseOrder(models.Model):
+    oc_id = models.CharField(primary_key=True, max_length=255)
+    sku = models.IntegerField()
+    client = models.CharField(max_length=255)
+    provider = models.CharField(max_length=255)
+    amount = models.IntegerField()
+    price = models.IntegerField()
+    state = models.CharField(default="creada", max_length=255)
+    channel = models.CharField(max_length=255)
+    deadline = models.DateTimeField()  #maximo tiempo de espera
+
+class File(models.Model):
+    filename = models.CharField(max_length=255)
+    processed = models.BooleanField(default=False)  
+    attended = models.BooleanField(default=False)

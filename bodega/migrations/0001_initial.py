@@ -15,7 +15,8 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Ingredient',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True,
+                                        primary_key=True, serialize=False, verbose_name='ID')),
                 ('production_batch', models.IntegerField()),
                 ('volume_in_store', models.IntegerField()),
             ],
@@ -23,7 +24,8 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Request',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True,
+                                        primary_key=True, serialize=False, verbose_name='ID')),
                 ('store_destination_id', models.CharField(max_length=255)),
                 ('sku_id', models.CharField(max_length=255)),
                 ('amount', models.CharField(max_length=255)),
@@ -47,17 +49,30 @@ class Migration(migrations.Migration):
                 ('production_time', models.IntegerField()),
                 ('productors', models.CharField(max_length=100)),
                 ('p_type', models.CharField(max_length=100)),
-                ('ingredients', models.ManyToManyField(related_name='ingredientes', through='bodega.Ingredient', to='bodega.Product')),
+                ('ingredients', models.ManyToManyField(
+                    related_name='ingredientes', through='bodega.Ingredient', to='bodega.Product')),
+            ],
+        ),
+        migrations.CreateModel(
+            name='File',
+            fields=[
+                ('id', models.AutoField(auto_created=True,
+                                        primary_key=True, serialize=False, verbose_name='ID')),
+                ('filename', models.CharField(max_length=255)),
+                ('processed', models.BooleanField(default=False)),
+                ('attended', models.BooleanField(default=False)),
             ],
         ),
         migrations.AddField(
             model_name='ingredient',
             name='sku_ingredient',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='sku_ingredient', to='bodega.Product'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE,
+                                    related_name='sku_ingredient', to='bodega.Product'),
         ),
         migrations.AddField(
             model_name='ingredient',
             name='sku_product',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='sku_product', to='bodega.Product'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE,
+                                    related_name='sku_product', to='bodega.Product'),
         ),
     ]

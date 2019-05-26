@@ -1,10 +1,12 @@
-from .utils import hashQuery
-from bodega.constants.logic_constants import almacen_stock, minimum_stock, prom_request, DELTA, sku_products, REQUEST_FACTOR
-from bodega.constants.config import ocURL, headers, almacenes
-import requests
-import json
-import xml.etree.ElementTree as ET
 import pysftp
+import xml.etree.ElementTree as ET
+import json
+import requests
+from bodega.models import File, PurchaseOrder
+from bodega.helpers.oc_functions import getOc
+from bodega.constants.config import ocURL, almacenes
+from .utils import hashQuery
+from bodega.constants.logic_constants import *
 
 
 def watch_server():
@@ -20,23 +22,36 @@ def watch_server():
         dir_structure = sftp.listdir_attr()
         cont = 0
         for attr in dir_structure:
-            cont += 1
             with sftp.open(attr.filename) as archivo:
+                file_entity = File.objects.filter(filename=attr.filename)
+                must_process = False
+                if not file_entity:
+                    cont += 1
+                    must_process = True
+                else:
+                    print("Ya existía: {}".format(attr.filename))
                 tree = ET.parse(archivo)
                 root = tree.getroot()
-                for node in root:
-                    print(node)
-                    if node.tag == 'id':
-                        oc_id = node.text
-                        print('ID de OC: {}'.format(oc_id))
-                        response = getOc(oc_id)
-                        print(response)
-                        fecha_entrega = response[0]['fechaEntrega']
-                        print(fecha_entrega)
-                        """
-                        Acá debería ir el manejo del archivo, en este punto
-                        tenemos el response sobre lo que involucra la orden de compra
-                        """
-                    else:
-                        print("{}: {}".format(node.tag, node.text))
+                if must_process:
+                    for node in root:
+                        print(node)
+                        if node.tag == 'id':
+                            oc_id = node.text
+                            print('ID de OC: {}'.format(oc_id))
+                            raw_response = getOc(oc_id)
+                            response = raw_response[0]
+                            file_entity= File.objects.create(filename=attr.filename,
+                                                    processed=True,
+                                                    attended=False)
+                            deadline = response["fechaEntrega"].replace("T", " ").replace("Z","")
+                            new_oc = PurchaseOrder.objects.create(oc_id=response["_id"], sku=response['sku'], client=response['cliente'], provider=response['proveedor'],
+                                                                  amount=response['cantidad'], price=response["precioUnitario"], channel=response['canal'], deadline=deadline)
+                            file_entity.save()
+                            new_oc.save()
+                            """
+                            Acá debería ir el manejo del archivo, en este punto
+                            tenemos el response sobre lo que involucra la orden de compra
+                            """
+                        else:
+                            print("{}: {}".format(node.tag, node.text))
             print(attr.filename, type(attr.filename))
