@@ -46,11 +46,11 @@ class Request(models.Model):
 
 class PurchaseOrder(models.Model):
     oc_id = models.CharField(primary_key=True, max_length=255)
-    sku = models.IntegerField
+    sku = models.IntegerField()
     client = models.CharField(max_length=255)
     provider = models.CharField(max_length=255)
     amount = models.IntegerField()
     price = models.IntegerField()
     state = models.CharField(default="creada", max_length=255)
     channel = models.CharField(max_length=255)
-    deadline = models.DateField()  #maximo tiempo de espera
+    deadline = models.DateTimeField()  #maximo tiempo de espera
