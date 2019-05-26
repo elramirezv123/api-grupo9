@@ -52,7 +52,7 @@ def get_inventory():
     return current_stocks, current_sku_stocks
 
 
-def thread_check_2():
+def thread_check():
     '''
     current_stocks: {'almacenId': [{sku: <cantidad>}]} (cantidad por almacen)
     current_sku_stocks: {sku: <cantidad>} (cantidad total por sku)
