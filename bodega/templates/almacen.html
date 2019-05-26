@@ -1,0 +1,42 @@
+{% if prod %}
+<h1>Información Almacenes (Producción)</h1>
+{% else %}
+<h1>Información Almacenes (Develop)</h1>
+{% endif %}
+
+{% if almacenes %}
+{% for almacen in almacenes %}
+    {% if almacen.pulmon %}
+    <ul> <h1>Pulmon</h1>
+        <li><h3>ID: {{ almacen.id }}</h3></li>
+        <li><h3>Espacio total: {{ almacen.totalSpace }}</h3></li>
+        <li><h3>Espacio usado: {{ almacen.usedSpace }}</h3></li>
+    </ul>
+    {% elif almacen.recepcion %}
+    <ul><h1>Recepcion</h1>
+        <li><h3>ID: {{ almacen.id }}</h3></li>
+        <li><h3>Espacio total: {{ almacen.totalSpace }}</h3></li>
+        <li><h3>Espacio usado: {{ almacen.usedSpace }}</h3></li>
+    </ul>
+    {% elif almacen.cocina %}
+    <ul> <h1>Cocina</h1>
+        <li><h3>ID: {{ almacen.id }}</h3></li>
+        <li><h3>Espacio total: {{ almacen.totalSpace }}</h3></li>
+        <li><h3>Espacio usado: {{ almacen.usedSpace }}</h3></li>
+    </ul>
+    {% elif almacen.despacho %}
+    <ul> <h1>Despacho</h1>
+        <li><h3>ID: {{ almacen.id }}</h3></li>
+        <li><h3>Espacio total: {{ almacen.totalSpace }}</h3></li>
+        <li><h3>Espacio usado: {{ almacen.usedSpace }}</h3></li>
+    </ul>
+    {% else %}
+    <ul> <h1>Libre</h1>
+        <li><h3>ID: {{ almacen.id }}</h3></li>
+        <li><h3>Espacio total: {{ almacen.totalSpace }}</h3></li>
+        <li><h3>Espacio usado: {{ almacen.usedSpace }}</h3></li>
+    </ul>
+    {% endif %}
+    {% endfor %}
+    
+{% endif %}

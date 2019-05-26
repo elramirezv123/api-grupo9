@@ -2,7 +2,8 @@ import base64
 import hmac
 import hashlib
 import urllib
-from ..constants import apiKey
+import datetime
+from bodega.constants.config import apiKey
 
 '''
 Este módulo es para las funciones que son transversalmente útiles para
@@ -21,4 +22,9 @@ def hashQuery(query):
     hash = hmac.new(sharedKey, query, hashlib.sha1).digest()
     b = base64.encodestring(hash)
     return b.rstrip().decode("utf-8")
+
+
+def toMiliseconds(minutes):
+    start = (datetime.datetime.now() - datetime.datetime(1970,1,1)).total_seconds()
+    return int((start + minutes*60)*1000)
 

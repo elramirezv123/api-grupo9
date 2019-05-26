@@ -16,10 +16,11 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from django.conf.urls import url, include, re_path
-from bodega.urls import urlpatterns
+from bodega.urls import urls
 
-vistas = urlpatterns
+vistas = urls
 
 urlpatterns = [
-    *vistas
+    *vistas,
+    re_path('control/', include('bodega.urls'))
 ]

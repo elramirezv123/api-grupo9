@@ -21,23 +21,24 @@ def populate_products(apps, schema_editor):
     product_model = apps.get_model('bodega', 'Product')
     for product in data:
         product = product_model.objects.create(sku=int(product['sku']),
-                                               price=int(
-                                                   product['precio'][1:].replace(',', "")) if product['precio'] else 0,
-                                               duration=float(
-                                                   product['duracion']),
-                                               batch=int(product['lote']),
-                                               used_by=int(product["usado_por"]),
-                                               production_time=int(product['tiempo_esperado']),
-                                               productors=",".join(product["grupos_productores"]))
+                                               name = product['nombre'],
+                                               cost = int(product['costo']) if product['costo'] != "" else 0,
+                                               price=int(product['precio']) if product['precio'] != "" else 0,
+                                               duration=float(product['duracion(hrs)']),
+                                               batch=int(product['lote produccion']),
+                                               used_by=int(product["usado por"]),
+                                               production_time=int(product['tiempo produccion(mins)']),
+                                               productors=product["grupos productores"],
+                                               p_type = product['produccion(tipo)'])
         product.save()
     
     for line in ingredients_data:
-        product_instance = Product.objects.get(pk=int(line[0]))
-        ingredient_instance = Product.objects.get(pk=int(line[2]))
+        product_instance = Product.objects.get(pk=int(line['sku_producto']))
+        ingredient_instance = Product.objects.get(pk=int(line['sku_ingrediente']))
         new_ingredient = Ingredient.objects.create(sku_product=product_instance,
                                                    sku_ingredient=ingredient_instance,
-                                                   production_batch=int(line[6]),
-                                                   volume_in_store=int(float(line[9])))
+                                                   production_batch=int(line['lote produccion']),
+                                                   volume_in_store=int(float(line['bodega'])))
         new_ingredient.save()
                 
 
