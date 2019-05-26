@@ -23,7 +23,7 @@ def almacenes_info(request):
 def inventory_info(request):
     form = PedidosForm()
     current_stocks, current_sku_stocks = get_inventory()
-    context = {'current_stocks': current_stocks, "current_sku_stocks": current_sku_stocks, 'form': form}
+    context = {'current_stocks': current_stocks, "current_sku_stocks": current_sku_stocks, 'form': form, 'prod': prod}
     return render(request, 'inventory.html', context)
 
 
