@@ -1,6 +1,6 @@
 from .utils import hashQuery
-from bodega.constants.logic_constants import almacen_stock, minimum_stock, prom_request, DELTA, sku_products, REQUEST_FACTOR
-from bodega.constants.config import ocURL, headers, almacenes
+from bodega.constants.logic_constants import headers, almacen_stock, minimum_stock, prom_request, DELTA, sku_products, REQUEST_FACTOR
+from bodega.constants.config import ocURL, almacenes
 import requests
 import json
 import xml.etree.ElementTree as ET
@@ -14,7 +14,7 @@ def deleteOc(ocId, reason):
     return response.json()
 
 
-def newOc(clientId, vendorId, sku, delivery_date, quantity, unitPrice, channel, *args):
+def newOc(clientId, vendorId, sku, delivery_date, quantity, unitPrice, channel, notes="Default note", notURL="https://tuerca9.ing.puc.cl"):
     body = {
         "cliente": clientId,
         "proveedor": vendorId,
@@ -23,7 +23,7 @@ def newOc(clientId, vendorId, sku, delivery_date, quantity, unitPrice, channel, 
         "cantidad": quantity,
         "precioUnitario": unitPrice,
         "canal": channel,
-        "notas": args[0],
+        "notas": notes,
         "urlNotificacion": args[1]
     }
     response = requests.put(ocURL + "crear", headers=headers, json=body)
