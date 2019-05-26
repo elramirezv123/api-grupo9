@@ -7,7 +7,7 @@ REQUEST_FACTOR = 10
 
 headers = {'Content-Type': 'application/json'}
 
-sku_products = [1001, 1009, 1010, 1014, 1016]
+sku_products = [1001, 1002, 1004, 1008, 1009, 1010, 1013, 1016]
 
 # esta en lotes, no en cantidades
 minimum_stock = {
