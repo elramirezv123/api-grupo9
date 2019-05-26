@@ -1,6 +1,8 @@
 from .utils import hashQuery
 from bodega.constants.logic_constants import headers, almacen_stock, minimum_stock, prom_request, DELTA, sku_products, REQUEST_FACTOR
 from bodega.constants.config import ocURL, almacenes
+from bodega.helpers.utils import toMiliseconds
+from bodega.models import PurchaseOrder
 import requests
 import json
 import xml.etree.ElementTree as ET
@@ -14,17 +16,18 @@ def deleteOc(ocId, reason):
     return response.json()
 
 
-def newOc(clientId, vendorId, sku, delivery_date, quantity, unitPrice, channel, notes="Default note", notURL="https://tuerca9.ing.puc.cl"):
+def newOc(clientId, vendorId, sku, delivery_date, quantity, unitPrice, channel, notURL="https://tuerca9.ing.puc.cl"):
+
     body = {
         "cliente": clientId,
         "proveedor": vendorId,
         "sku": sku,
-        "fechaEntrega": delivery_date,
-        "cantidad": quantity,
-        "precioUnitario": unitPrice,
+        "fechaEntrega": toMiliseconds(delivery_date),
+        "cantidad": int(quantity),
+        "precioUnitario": int(unitPrice) if int(unitPrice) > 0 else 10,
         "canal": channel,
-        "notas": notes,
-        "urlNotificacion": args[1]
+        "notas": "Yupi",
+        "urlNotificacion": notURL
     }
     response = requests.put(ocURL + "crear", headers=headers, json=body)
     return response.json()
@@ -46,6 +49,11 @@ def declineOc(ocId, reason):
     body = {"rechazo": reason}
     response = requests.post(ocURL + "rechazar/{}".format(ocId), headers=headers, json=body)
     return response.json()
+
+
+def updateOC(idOc, state):
+    order = PurchaseOrder.objects.get(oc_id=idOc)
+    oder.update(state=state)
 
 
 if __name__ == '__main__':
