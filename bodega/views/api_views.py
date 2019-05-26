@@ -3,8 +3,9 @@ from datetime import datetime, timedelta
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from bodega.constants.config import almacenes
+from bodega.helpers.handling_orders import watch_server
 from bodega.constants.logic_constants import sku_products
-from bodega.models import Product, Ingredient, Request
+from bodega.models import Product, Ingredient, Request, File
 from bodega.helpers.functions import send_order_another_group, get_stock_sku, validate_post_body, is_our_product, request_for_ingredient
 from bodega.helpers.functions import get_request_body, get_inventory, get_inventories, request_sku_extern, thread_check
 from bodega.helpers.bodega_functions import get_skus_with_stock
@@ -14,6 +15,7 @@ from bodega.helpers.bodega_functions import get_skus_with_stock
 '''
 Estas son las vistas que representan los endpoints descritos en nuestra documentación.
 '''
+
 
 @csrf_exempt
 def inventories(request):
@@ -68,12 +70,12 @@ def orders(request):
 
             request_entity.save()
             request_response = {
-                'id' :request_entity.id,
+                'id': request_entity.id,
                 'cantidad': request_entity.amount,
-                'storeDestinationId' :request_entity.store_destination_id,
-                'accepted' :request_entity.accepted,
-                'dispatched' :request_entity.dispatched,
-                'deadline' :request_entity.deadline,
+                'storeDestinationId': request_entity.store_destination_id,
+                'accepted': request_entity.accepted,
+                'dispatched': request_entity.dispatched,
+                'deadline': request_entity.deadline,
             }
             send_order_another_group(request_entity.id)
 
@@ -98,16 +100,16 @@ def orders(request):
         request_deadline = datetime.strptime(req_body['deadline'], '%Y-%m-%d')
         request_entity = Request.objects.filter(id=int(request_id))
         request_entity.update(store_destination_id=req_body['almacenId'],
-                                                sku_id=req_body['sku'],
-                                                amount=req_body['cantidad'],
-                                                deadline=request_deadline)
+                              sku_id=req_body['sku'],
+                              amount=req_body['cantidad'],
+                              deadline=request_deadline)
         request_entity = request_entity.get()
         return JsonResponse({
-            'id' :request_entity.id,
-            'storeDestinationId' :request_entity.store_destination_id,
-            'accepted' :request_entity.accepted,
-            'dispatched' :request_entity.dispatched,
-            'deadline' :request_entity.deadline,
+            'id': request_entity.id,
+            'storeDestinationId': request_entity.store_destination_id,
+            'accepted': request_entity.accepted,
+            'dispatched': request_entity.dispatched,
+            'deadline': request_entity.deadline,
         }, safe=False, status=200)
     elif request.method == 'GET':
         print(thread_check_2())
@@ -116,7 +118,8 @@ def orders(request):
 
 
 def test(request):
-    thread_check()
+    # watch_server()
+    # thread_check()
     # current_stocks, current_sku_stocks = get_inventory()
     # request_for_ingredient('1106', 10, current_sku_stocks, {})
     return JsonResponse({'test': 'working'}, safe=False, status=200)

@@ -1,6 +1,6 @@
 from .utils import hashQuery
-from bodega.constants.logic_constants import headers, almacen_stock, minimum_stock, prom_request, DELTA, sku_products, REQUEST_FACTOR
-from bodega.constants.config import ocURL, almacenes
+from bodega.constants.logic_constants import *
+from bodega.constants.config import *
 from bodega.helpers.utils import toMiliseconds
 from bodega.models import PurchaseOrder
 import requests
@@ -44,10 +44,11 @@ def receiveOc(ocId):
         ocURL + "recepcionar/{}".format(ocId), headers=headers)
     return response.json()
 
-    
+
 def declineOc(ocId, reason):
     body = {"rechazo": reason}
-    response = requests.post(ocURL + "rechazar/{}".format(ocId), headers=headers, json=body)
+    response = requests.post(
+        ocURL + "rechazar/{}".format(ocId), headers=headers, json=body)
     return response.json()
 
 
@@ -55,6 +56,3 @@ def updateOC(idOc, state):
     order = PurchaseOrder.objects.get(oc_id=idOc)
     oder.update(state=state)
 
-
-if __name__ == '__main__':
-    watch_server()
