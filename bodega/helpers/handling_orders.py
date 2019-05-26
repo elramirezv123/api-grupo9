@@ -2,7 +2,7 @@ import pysftp
 import xml.etree.ElementTree as ET
 import json
 import requests
-from bodega.models import File
+from bodega.models import File, PurchaseOrder
 from bodega.helpers.oc_functions import getOc
 from bodega.constants.config import ocURL, almacenes
 from .utils import hashQuery
@@ -32,20 +32,22 @@ def watch_server():
                     print("Ya existía: {}".format(attr.filename))
                 tree = ET.parse(archivo)
                 root = tree.getroot()
-                if cont < 3 and must_process:
+                if must_process:
                     for node in root:
                         print(node)
                         if node.tag == 'id':
                             oc_id = node.text
                             print('ID de OC: {}'.format(oc_id))
-                            response = getOc(oc_id)
-                            print(response)
-                            fecha_entrega = response[0]['fechaEntrega']
-                            print(fecha_entrega)
+                            raw_response = getOc(oc_id)
+                            response = raw_response[0]
                             file_entity= File.objects.create(filename=attr.filename,
                                                     processed=True,
                                                     attended=False)
+                            deadline = response["fechaEntrega"].replace("T", " ").replace("Z","")
+                            new_oc = PurchaseOrder.objects.create(oc_id=response["_id"], sku=response['sku'], client=response['cliente'], provider=response['proveedor'],
+                                                                  amount=response['cantidad'], price=response["precioUnitario"], channel=response['canal'], deadline=deadline)
                             file_entity.save()
+                            new_oc.save()
                             """
                             Acá debería ir el manejo del archivo, en este punto
                             tenemos el response sobre lo que involucra la orden de compra
@@ -53,5 +55,3 @@ def watch_server():
                         else:
                             print("{}: {}".format(node.tag, node.text))
             print(attr.filename, type(attr.filename))
-            if cont > 3:
-                break

@@ -118,7 +118,7 @@ def orders(request):
 
 
 def test(request):
-    watch_server()
+    # watch_server()
     # thread_check()
     # current_stocks, current_sku_stocks = get_inventory()
     # request_for_ingredient('1106', 10, current_sku_stocks, {})
