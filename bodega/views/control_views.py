@@ -16,8 +16,6 @@ def almacenes_info(request):
 
 def inventory_info(request):
     current_stocks, current_sku_stocks = get_inventory()
-    print(current_stocks)
-    print(current_sku_stocks)
     context = {'current_stocks': current_stocks, "current_sku_stocks": current_sku_stocks}
     return render(request, 'inventory.html', context)
 
