@@ -15,3 +15,18 @@
 {% else %}
 <h1>Aún no hay inventario :(</h1>
 {% endif %}
+
+<h1> Realizar pedidos</h1>
+<p>1001: Arroz granco corto, Multiplos de 10</p>
+<p>1002: Vinage, Multiplos de 10</p>
+<p>1004: Sal, Multiplos de 100</p>
+<p>1008: Filete salmón, Multiplos de 10</p>
+<p>1009: Filete atún, Multiplos de 3</p>
+<p>1010: Palta, Multiplos de 5</p>
+<p>1013: Masago, Multiplos de 10</p>
+<p>1016: Nori entero, Multiplos de 8</p>
+<form action="pedir" method="post">
+    {% csrf_token %}
+    {{ form }}
+    <input type="submit" value="Pedir">
+</form>

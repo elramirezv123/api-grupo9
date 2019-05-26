@@ -70,7 +70,7 @@ def make_a_product(sku, quantity):
     # Este servicio no requiere realizar el pago de la fabricación.
     hash = hashQuery("PUT"+str(sku)+str(quantity))
     headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
-    body = {"sku": str(sku), "cantidad": quantity}
+    body = {"sku": sku, "cantidad": quantity}
     response = requests.put(
         apiURL + "fabrica/fabricarSinPago", headers=headers, json=body)
     return response.json()
