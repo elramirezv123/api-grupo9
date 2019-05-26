@@ -1,6 +1,6 @@
 from .utils import hashQuery
-from bodega.constants.logic_constants import almacen_stock, minimum_stock, prom_request, DELTA, sku_products, REQUEST_FACTOR
-from bodega.constants.config import ocURL, headers, almacenes
+from bodega.constants.logic_constants import *
+from bodega.constants.config import *
 import requests
 import json
 import xml.etree.ElementTree as ET
@@ -41,12 +41,9 @@ def receiveOc(ocId):
         ocURL + "recepcionar/{}".format(ocId), headers=headers)
     return response.json()
 
-    
+
 def declineOc(ocId, reason):
     body = {"rechazo": reason}
-    response = requests.post(ocURL + "rechazar/{}".format(ocId), headers=headers, json=body)
+    response = requests.post(
+        ocURL + "rechazar/{}".format(ocId), headers=headers, json=body)
     return response.json()
-
-
-if __name__ == '__main__':
-    watch_server()

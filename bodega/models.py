@@ -51,3 +51,8 @@ class Purchase_Order(models.Model):
     accepted = models.BooleanField(default=False)  
     received = models.BooleanField(default=False)  #debo chequear esto de alguna forma
     deadline = models.DateField(null=True)  #maximo tiempo de espera
+
+class File(models.Model):
+    filename = models.CharField(max_length=255)
+    processed = models.BooleanField(default=False)  
+    attended = models.BooleanField(default=False)
