@@ -9,6 +9,7 @@ from bodega.models import Product, Ingredient, Request, File
 from bodega.helpers.functions import send_order_another_group, get_stock_sku, validate_post_body, is_our_product, request_for_ingredient
 from bodega.helpers.functions import get_request_body, get_inventory, get_inventories, request_sku_extern, thread_check
 from bodega.helpers.bodega_functions import get_skus_with_stock
+from bodega.helpers.oc_functions import getOc, declineOc, receiveOc
 
 # https://www.webforefront.com/django/accessurlparamstemplates.html
 
@@ -42,76 +43,51 @@ def inventories(request):
 
 @csrf_exempt
 def orders(request):
-    # Debe ser método POST y UPDATE
     if request.method == 'POST':
         # hay que guardar el pedido en la base de datos
         '''
         Request usado:
-        {"almacenId": "asdasd", "sku": "012301", "cantidad": "10"}
+        {"almacenId": "asdasd", "sku": "012301", "cantidad": "10", "oc": ide}
         '''
         req_body = get_request_body(request)
         req_sku = req_body['sku']
+        req_oc = req_body['oc']
+        order = getOc(req_oc)
         try:
             req_sku = int(req_sku)
         except:
+            declineOc(req_oc, "SKU NO SE PUEDE TRANSFORMAR A ENTERO (INT)")
             return JsonResponse({'error': "SKU NO SE PUEDE TRANSFORMAR A ENTERO (INT)"}, safe=False, status=400)
         if not is_our_product(req_sku):
-            return JsonResponse({'error': 'Sku is not produced by us'}, safe=False, status=400)
+            declineOc(req_oc, 'Sku is not produced by us')
+            return JsonResponse({'error': 'Sku is not produced by us'}, safe=False, status=404)
         stock, sku_stock_dict = get_inventory()
         lista = list(map(lambda x: int(x), sku_stock_dict))
         if req_sku not in lista or int(sku_stock_dict[str(req_sku)]) < int(req_body['cantidad']):
+            declineOc(req_oc, "We don't have stock of that sku. Sorry")
             return JsonResponse({'error': "We don't have stock of that sku. Sorry"}, safe=False, status=400)
         if validate_post_body(req_body):
-            request_deadline = datetime.now() + timedelta(days=10)
-            request_entity = Request.objects.create(store_destination_id=req_body['almacenId'],
-                                                    sku_id=req_body['sku'],
-                                                    amount=req_body['cantidad'],
-                                                    deadline=request_deadline)
+            new = PurchaseOrder.objects.create(oc_id=order['_id'], sku=order['sku'], client=order['cliente'], provider=order['proveedor'],
+                                amount=order['cantidad'], price=order['precioUnitario'], channel=order['canal'], deadline=order['fechaEntrega'])
+            new.save()
 
-            request_entity.save()
+            receiveOc(req_oc)
+            send_order_another_group(new.oc_id)
             request_response = {
-                'id': request_entity.id,
-                'cantidad': request_entity.amount,
-                'storeDestinationId': request_entity.store_destination_id,
-                'accepted': request_entity.accepted,
-                'dispatched': request_entity.dispatched,
-                'deadline': request_entity.deadline,
+                'sku': order['sku'],
+                'cantidad': order['cantidad'],
+                'almacenId': order['cliente'],
+                'grupoProveedor': 9,
+                'aceptado': True,
+                'despachado': True
             }
-            send_order_another_group(request_entity.id)
 
             return JsonResponse(request_response, safe=False, status=201)
-            # check_stock(request_entity.sku_id , request_entity.amount)
         else:
+            declineOc(req_oc, 'Bad body format')
             return JsonResponse({'error': 'Bad body format'}, safe=False, status=400)
-    elif request.method == 'PUT':
-        '''
-        Espera un body de la forma:
-        {"pedido_id": "1", "sku": 11, "cantidad": 0, "almacenId": "nuevo almacen", "deadline": "2019-10-29"}
-        '''
-        req_body = get_request_body(request)
-        req_sku = req_body['sku']
-        if not is_our_product(req_sku):
-            return JsonResponse({'error': 'Sku is not produced by us'}, safe=False, status=400)
-        _, sku_stock_dict = get_inventory()
-        if req_sku not in lista or int(sku_stock_dict[str(req_sku)]) < int(req_body['cantidad']):
-            return JsonResponse({'error': "We don't have stock of that sku. Sorry"}, safe=False, status=400)
-
-        request_id = req_body['pedido_id']
-        request_deadline = datetime.strptime(req_body['deadline'], '%Y-%m-%d')
-        request_entity = Request.objects.filter(id=int(request_id))
-        request_entity.update(store_destination_id=req_body['almacenId'],
-                              sku_id=req_body['sku'],
-                              amount=req_body['cantidad'],
-                              deadline=request_deadline)
-        request_entity = request_entity.get()
-        return JsonResponse({
-            'id': request_entity.id,
-            'storeDestinationId': request_entity.store_destination_id,
-            'accepted': request_entity.accepted,
-            'dispatched': request_entity.dispatched,
-            'deadline': request_entity.deadline,
-        }, safe=False, status=200)
-    return JsonResponse({'error': {'type': 'Method not implemented'}}, safe=False, status=404)
+    
+    return JsonResponse({'error': {'type': 'Method not implemented'}}, safe=False, status=501)
 
 
 def test(request):
