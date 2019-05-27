@@ -356,7 +356,7 @@ def request_sku_extern(sku, quantity, inventories):
 
 
 def validate_post_body(body):
-    valid_keys = ['almacenId', 'sku', 'cantidad']
+    valid_keys = ['almacenId', 'sku', 'cantidad', 'oc']
     return set(body.keys()) == set(valid_keys)
 
 def is_our_product(sku):
@@ -436,27 +436,27 @@ def make_space_in_almacen(almacen_name, to_almacen_name, amount_to_free, banned_
     return False
 
 
-def send_order_another_group(request_id, stock):
+def send_order_another_group(order_id):
     #esta funcion mueve el producto a despacho
     # para luego enviar ese producto al grupo que lo pidio
-    request_entity = Request.objects.filter(id=int(request_id))
-    request_entity = request_entity.get()
-    if not request_entity.dispatched:
-        sku = request_entity.sku_id
-        amount = request_entity.amount
-        # movemos a despacho
-        '''
-        Chequear si es que podemos moverlo
-        para no completar a medias una orden
-        '''
-        if stock[almacenes["despacho"]] + amount <= almacen_stock["despacho"]:
-            productos_movidos = send_to_somewhere(sku, int(amount), almacenes["despacho"])
-            # enviamos luego al grupo externo
-            for product in productos_movidos:
-                move_product_to_another_group(product["_id"], request_entity.store_destination_id)
-            # si se envio todo entonces despacho todo entonces seteamos dispatched
-            request_entity.update(dispatched=True)
+    order_entity = PurchaseOrder.objects.filter(oc_id=int(order_id))
+    order_entity = order_entity.get()
+    sku = order_entity.sku
+    amount = order_entity.amount
+    # movemos a despacho
+    '''
+    Chequear si es que podemos moverlo
+    para no completar a medias una orden
+    '''
+    despacho = get_almacen_info("despacho")
+    if despacho.usedSpace + amount <= despacho.totalSpace:
+        productos_movidos = send_to_somewhere(sku, int(amount), almacenes["despacho"])
+        # enviamos luego al grupo externo
+        for product in productos_movidos:
+            move_product_to_another_group(product["_id"], order_entity.client)
+        # si se envio todo entonces despacho todo entonces seteamos dispatched
+        order_entity.update(state="enviada")
 
-        else:
-            make_space_in_almacen('despacho', 'pulmon', amount)
-            # hay que ver como reintentar la orden cuando si haya espacio
+    else:
+        make_space_in_almacen('despacho', 'pulmon', amount)
+        send_order_another_group(order_id)
