@@ -338,7 +338,6 @@ def move_products(products, almacenId):
     # Recorre la lista de productos que se le entrega y lo mueve entre almacenes (solo de nosotros)
     producto_movidos = []
     for product in products:
-        print(product)
         producto_movidos.append(product)
         move_product_inter_almacen(product["_id"], almacenId)
     return producto_movidos

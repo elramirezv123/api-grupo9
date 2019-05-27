@@ -11,6 +11,7 @@ a nuestra API. La idea es hacerlo igual a como est√° descrito en la documentaci√
 router = DefaultRouter()
 
 router.register(r'products', products_views.ProductViewSet)
+router.register(r'ingredients', products_views.IngredientViewSet)
 
 urls = [
     path('inventories', api_views.inventories),
@@ -23,4 +24,5 @@ urls = [
 urlpatterns = [*router.urls,
             path('almacenes', control_views.almacenes_info),
             path('inventario', control_views.inventory_info),
-            path('pedir', control_views.pedir)]
+            path('pedir', control_views.pedir),
+            path('preparar', control_views.preparar)]

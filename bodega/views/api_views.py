@@ -111,9 +111,6 @@ def orders(request):
             'dispatched': request_entity.dispatched,
             'deadline': request_entity.deadline,
         }, safe=False, status=200)
-    elif request.method == 'GET':
-        print(thread_check_2())
-        return JsonResponse({'data': 'hola'}, safe=False)
     return JsonResponse({'error': {'type': 'Method not implemented'}}, safe=False, status=404)
 
 
