@@ -66,15 +66,13 @@ def thread_check():
     random.shuffle(minimum_stock_list)
     inventories = {}
     for sku in minimum_stock_list:
-        sku = "1112"
         if int(sku) < 10000:
             print("SKU a preguntar: ", sku)
             product_current_stock = current_sku_stocks.get(sku, 0)
             print("CURRENT STOCK DE: {0} es {1}".format(sku, product_current_stock))
             if product_current_stock < int(minimum_stock[sku]*1.1):        
                 cantidad_faltante = int(minimum_stock[sku]*1.1) - product_current_stock
-
-                pedidos = PurchaseOrder.objects.filter(sku=int(sku))
+                pedidos = PurchaseOrder.objects.filter(sku=int(sku), state="creada")
                 cant = 0
                 for ped in pedidos:
                     now = datetime.datetime.now().replace(tzinfo=pytz.UTC)
@@ -88,7 +86,6 @@ def thread_check():
                 cantidad_faltante -= cant
                 print("CANTIDAD A LA ESPERA DE LLEGADA: ", cant)
                 print("CANTIDAD A PEDIR: ", cantidad_faltante)
-                return
                 is_ok, pending = request_sku_extern(sku, cantidad_faltante, inventories)  #inventories queda poblado
                 print("LA ORDEN FUE RESPONDIDA CON: ", is_ok)
                 print("QUEDA PENDIENTE: ", pending)
@@ -96,7 +93,6 @@ def thread_check():
                     # VERIFICAMOS SI TENEMOS SUS INGREDIENTES    
                     # PENDING ES LA CANTIDAD QUE NO PUDE PEDIR              
                     request_for_ingredient(sku, pending, current_sku_stocks, inventories)
-                    return
                     
 
 def request_for_ingredient(sku, pending, current_sku_stocks, inventories):
@@ -163,22 +159,25 @@ def request_for_ingredient(sku, pending, current_sku_stocks, inventories):
                         # NO ES NUESTRO
                         # ENTONCES DEBEMOS PEDIR LO QUE NOS FALTA PARA COMPLETAR
                         # VERIFICAMOS SI YA LO PEDIMOS, HACIENDO LA SUMA DE LOS PEDIDOS
-                        pedidos = PurchaseOrder.objects.filter(sku=int(ing_sku))
+                        pedidos = PurchaseOrder.objects.filter(sku=int(ing_sku), state="creada")
                         cant = 0
                         for ped in pedidos:
                             now = datetime.datetime.now().replace(tzinfo=pytz.UTC)
                             deadline = ped.deadline.replace(tzinfo=pytz.UTC)
+                            print("NOW: {0}, DEADLINE: {1}".format(now, deadline))
                             if deadline > now:
                                 cant += ped.amount
                             else:
                                 # YA PASO SU HORA, HAY QUE BORRARLO
+                                print("EL PEDIDO {0} VENCIO CON FECHA {1}".format(ped.oc_id, ped.deadline))
                                 ped.delete()
-                        print("PASO PEDIDOS")
-                        return
+                        print("PASO PEDIDOS")                        
                         cantidad_ingrediente_a_pedir = pending - cant
                         if cantidad_ingrediente_a_pedir > 0:
                             is_ok, pending = request_sku_extern(ing_sku, cantidad_ingrediente_a_pedir, inventories)
+                            
                             if pending:
+                                print("QUEDO PENDIENTE {0} DEL INGREDIENTE {1}".format(pending, ing_sku))
                                 # SOLO QUEDA LLORAR
                                 # AUNQUE QUIZAS SE PODRIA REINTENTAR EN UNOS MINUTOS MAS
                                 pass
@@ -197,8 +196,9 @@ def request_for_ingredient(sku, pending, current_sku_stocks, inventories):
             pedidos = PurchaseOrder.objects.filter(sku=int(sku))
             cant = 0
             for ped in pedidos:
-                now = pytz.utc.localize(datetime.datetime.now())
-                deadline = pytz.utc.localize(ped.deadline)
+                now = datetime.datetime.now().replace(tzinfo=pytz.UTC)
+                deadline = ped.deadline.replace(tzinfo=pytz.UTC)
+                print("NOW: {0}, DEADLINE: {1}".format(now, deadline))
                 if deadline > now:
                     cant += ped.amount
                 else:
