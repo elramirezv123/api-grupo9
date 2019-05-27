@@ -9,10 +9,7 @@
 <h1>Stocks de los inventarios</h1>
 {% if current_sku_stocks|length > 0 %}
 {% for key, almacen in current_stocks.items %}
-    <h1>{{almacen}}</h1>
-    {%for sku in almacen%}
-    <h3>{{sku}}</h3>
-        {% endfor %}
+    <h1>{{key}}: {{almacen}}</h1>
     {% endfor %}
 {% else %}
 <h1>Aún no hay inventario :(</h1>
@@ -50,5 +47,8 @@
     <input type="submit" value="Pedir">
 </form>
 
+<form action="vaciar">
+    <input type="submit" value="Vacíar despacho" />
+</form>
 
 <h2>Mas información en <a href="products">Productos</a> e <a href="ingredients">Ingredientes</a></h2>

@@ -48,12 +48,19 @@ def preparar(request):
             sku = form.cleaned_data['sku']
             ingredientes = Ingredient.objects.filter(sku_product=int(sku))
             cantidad = int(form.cleaned_data['cantidad'])
-            make_space_in_almacen("pulmon", "despacho", 177)
-            for ingredient in ingredientes:
-                send_to_somewhere(ingredient.sku_ingredient.sku, ingredient.volume_in_store*cantidad, almacenes["despacho"])
+            make_space_in_almacen("despacho", "libre2", 177, [i.sku_ingredient.sku for i in ingredientes])
             response = make_a_product(int(sku), cantidad)
-            print(response)
+            if not response.get("sku", False):
+                for ingredient in ingredientes:
+                    send_to_somewhere(str(ingredient.sku_ingredient.sku), ingredient.volume_in_store*cantidad, almacenes["despacho"])
+                response = make_a_product(int(sku), cantidad)
             return HttpResponseRedirect('inventario')
+
+def vaciar(request):
+    # if this is a POST request we need to process the form data
+    # create a form instance and populate it with data from the request:
+    make_space_in_almacen("despacho", "libre1", 177)
+    return HttpResponseRedirect('inventario')
             
 
 # Leave the rest of the views (detail, results, vote) unchanged

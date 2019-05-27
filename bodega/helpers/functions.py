@@ -339,14 +339,14 @@ def move_products(products, almacenId):
     producto_movidos = []
     for product in products:
         producto_movidos.append(product)
-        move_product_inter_almacen(product["_id"], almacenId)
+        response = move_product_inter_almacen(product["_id"], almacenId)
     return producto_movidos
 
 def send_to_somewhere(sku, cantidad, to_almacen):
     # Mueve el producto y la cantidad que se quiera hacia el almacen que se quiera (solo de nosotros)
     producto_movidos = []
     for almacen, almacenId in almacenes.items():
-        if almacen != "despacho":
+        if almacen != "despacho" and almacenId != to_almacen:
             products = get_products_with_sku(almacenId, sku)
             diff = len(products) - cantidad
             try:
@@ -385,23 +385,26 @@ def make_space_in_almacen(almacen_name, to_almacen_name, amount_to_free, banned_
     allowed_skus = list(filter(lambda x: x[0] not in banned_sku, almacen_sku_dict.items()))
     available_space_to_free = sum(map(lambda x: x[1],allowed_skus), 0)
     if available_space_to_free >= amount_to_free:
-        # Se puede liberar el espacio que se pide
         remaining = amount_to_free
-        while remaining > 0:
-            # Elegimos un sku
-            sku = allowed_skus.pop()
-            # print('Sku selected: {}'.format(sku))
-            # Movemos todo de ese sku
-            amount_to_move = min(almacen_sku_dict[sku[0]], remaining)
-            # print('A mover {} de sku {}'.format(amount_to_move, sku[0]))
-            try:
-                amount_moved = len(send_to_somewhere(sku[0], amount_to_move, to_almacen_id))
-            except TypeError:
-                # Si es que send_to_somewhere no retorna una lista (i.e. falló)
-                return False
-            remaining -= amount_moved
-        return True
-    return False
+    else:
+        remaining = available_space_to_free
+    
+    while remaining > 0:
+        # Elegimos un sku
+        sku = allowed_skus.pop()
+        # print('Sku selected: {}'.format(sku))
+        # Movemos todo de ese sku
+        amount_to_move = min(almacen_sku_dict[sku[0]], remaining)
+        # print('A mover {} de sku {}'.format(amount_to_move, sku[0]))
+        try:
+            amount_moved = len(send_to_somewhere(sku[0], amount_to_move, to_almacen_id))
+        except TypeError:
+            # Si es que send_to_somewhere no retorna una lista (i.e. falló)
+            return False
+        remaining -= amount_moved
+
+    return True
+
 
 
 def send_order_another_group(request_id, stock):

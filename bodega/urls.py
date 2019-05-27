@@ -25,4 +25,5 @@ urlpatterns = [*router.urls,
             path('almacenes', control_views.almacenes_info),
             path('inventario', control_views.inventory_info),
             path('pedir', control_views.pedir),
-            path('preparar', control_views.preparar)]
+            path('preparar', control_views.preparar),
+            path('vaciar', control_views.vaciar)]
