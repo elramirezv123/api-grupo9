@@ -1,4 +1,4 @@
-from bodega.constants.logic_constants import almacen_stock, headers, minimum_stock, prom_request, DELTA, sku_products, REQUEST_FACTOR
+from bodega.constants.logic_constants import almacen_stock, headers, minimum_stock, minimum_stock_10000, prom_request, DELTA, sku_products, REQUEST_FACTOR
 from bodega.constants.config import almacenes, id_grupos
 from bodega.models import Product, Ingredient, Request, PurchaseOrder
 from bodega.helpers.bodega_functions import get_skus_with_stock, get_almacenes, get_products_with_sku, send_product
@@ -55,23 +55,19 @@ def get_inventory():
     return current_stocks, current_sku_stocks
 
 
-def thread_check():
-    '''
-    current_stocks: {'almacenId': [{sku: <cantidad>}]} (cantidad por almacen)
-    current_sku_stocks: {sku: <cantidad>} (cantidad total por sku)
-    '''
+def thread_check_10000():
     current_stocks, current_sku_stocks = get_inventory()
+    print("VERIFICANDO LOS 10 mil")
     print("current stock: ", current_sku_stocks)
-    minimum_stock_list = list(minimum_stock.keys())  #en batches
+    minimum_stock_list = list(minimum_stock_10000.keys())  #en batches
     random.shuffle(minimum_stock_list)
-    inventories = {}
     for sku in minimum_stock_list:
-        if int(sku) < 10000:
+        try:
             print("SKU a preguntar: ", sku)
             product_current_stock = current_sku_stocks.get(sku, 0)
             print("CURRENT STOCK DE: {0} es {1}".format(sku, product_current_stock))
-            if product_current_stock < int(minimum_stock[sku]*1.1):        
-                cantidad_faltante = int(minimum_stock[sku]*1.1) - product_current_stock
+            if product_current_stock < int(minimum_stock_10000[sku]):        
+                cantidad_faltante = int(minimum_stock_10000[sku]) - product_current_stock
                 pedidos = PurchaseOrder.objects.filter(sku=int(sku), state="creada") | PurchaseOrder.objects.filter(sku=int(sku), state="aceptada")
                 # si es asi, entonces voy a verificar si ha sido terminada con get oc
                 cant = 0
@@ -85,20 +81,96 @@ def thread_check():
                             cant += ped.amount
                         else:
                             # YA PASO SU HORA, HAY QUE BORRARLO
-                           ped.state = "vencida"
+                            ped.state = "vencida"
                     else:
                         ped.state = c.state
                 cantidad_faltante -= cant
                 print("CANTIDAD A LA ESPERA DE LLEGADA: ", cant)
                 print("CANTIDAD A PEDIR: ", cantidad_faltante)
+                inventories = {}
                 is_ok, pending = request_sku_extern(sku, cantidad_faltante, inventories)  #inventories queda poblado
                 print("LA ORDEN FUE RESPONDIDA CON: ", is_ok)
                 print("QUEDA PENDIENTE: ", pending)
-                return
-                if not is_ok and pending > 0:
-                    # VERIFICAMOS SI TENEMOS SUS INGREDIENTES    
-                    # PENDING ES LA CANTIDAD QUE NO PUDE PEDIR              
-                    request_for_ingredient(sku, pending, current_sku_stocks, inventories)
+                if pending > 0:
+                    ingredients = Ingredient.objects.filter(sku_product=int(sku))
+                    check_ingre = {}  #almacena sku_ing: para cuantos batch alcanza
+                    for ing in ingredients:
+                        # estos ingredientes seran si o si de nivel 100, por lo que no son compuestos
+                        print("VERIFICANDO INGREDIENTE {0} PARA EL PRODUCTO {1}".format(ing.sku_ingredient.sku, ing.sku_product.sku))
+                        ingre_sku = ing.sku_ingredient.sku  #obtenemos el sku del ingrediente
+                        stock_we_have = current_sku_stocks.get(ingre_sku, 0)
+                        print("STOCK QUE TENEMOS: ", stock_we_have)
+                        # volume in store almacena la cantidad de ese ingrediente por producto
+                        # GUARDO PARA CUANTOS BATCH del producto ME ALCANZAN ESE INGREDIENTE
+                        check_ingre[ingre_sku] = int(stock_we_have)
+                    
+                    # una vez chequeo todos, obtengo la maxima cantidad de bach que podre producir
+                    max_cant_producible = min(check_ingre.values())     
+                    print("MAXIMA CANTIDAD PRODUCIBLE: ", max_cant_producible) 
+                    #TODOS PRODUCEN LOS DE NIVEL 10 MIL, ENTONCES MANDO A PRODUCIR
+                    if max_cant_producible > 0: 
+                        make_a_product(sku, max_cant_producible)
+                    if max_cant_producible < pending:
+                        for ingree in check_ingre:
+                            if check_ingre[ingree] == max_cant_producible:
+                                print("NOS QUEDAMOS SIN INGREDIENTE {0} PARA PRODUCIR EL PRODUCTO {1}".format(ingree,sku))
+                                break
+        except Exception as ex:
+            print("ERROR THREAD_CHECK_10000: ", ex)
+
+
+
+def thread_check():
+    '''
+    current_stocks: {'almacenId': [{sku: <cantidad>}]} (cantidad por almacen)
+    current_sku_stocks: {sku: <cantidad>} (cantidad total por sku)
+    '''
+    current_stocks, current_sku_stocks = get_inventory()
+    print("current stock: ", current_sku_stocks)
+    minimum_stock_list = list(minimum_stock.keys())  #en batches
+    random.shuffle(minimum_stock_list)
+    inventories = {}
+    for sku in minimum_stock_list:        
+            if int(sku) < 10000:
+                print("SKU a preguntar: ", sku)
+                product_current_stock = current_sku_stocks.get(sku, 0)
+                print("CURRENT STOCK DE: {0} es {1}".format(sku, product_current_stock))
+                if product_current_stock < int(minimum_stock[sku]*3):        
+                    try:
+                        cantidad_faltante = int(minimum_stock[sku]*3) - product_current_stock
+                        pedidos = PurchaseOrder.objects.filter(sku=int(sku), state="creada") | PurchaseOrder.objects.filter(sku=int(sku), state="aceptada")
+                        # si es asi, entonces voy a verificar si ha sido terminada con get oc
+                        cant = 0
+                        for ped in pedidos:
+                            c = getOc(ped.oc_id)[0]
+                            if(c.state.upper() != "TERMINADA"):
+                                now = datetime.datetime.now().replace(tzinfo=pytz.UTC)
+                                deadline = ped.deadline.replace(tzinfo=pytz.UTC)
+                                print("NOW: {0}, DEADLINE: {1}".format(now, deadline))
+                                if deadline > now:
+                                    cant += ped.amount
+                                else:
+                                    # YA PASO SU HORA, HAY QUE BORRARLO
+                                    ped.state = "vencida"
+                            else:
+                                ped.state = c.state
+                        cantidad_faltante -= cant
+                        print("CANTIDAD A LA ESPERA DE LLEGADA: ", cant)
+                        print("CANTIDAD A PEDIR: ", cantidad_faltante)
+                        is_ok, pending = request_sku_extern(sku, cantidad_faltante, inventories)  #inventories queda poblado
+                        print("LA ORDEN FUE RESPONDIDA CON: ", is_ok)
+                        print("QUEDA PENDIENTE: ", pending)
+                    except Exception as ex:
+                        pending = -2
+                        print("ERROR THREAD_CHECK: ", ex)
+                    if not is_ok and pending > 0:
+                        # VERIFICAMOS SI TENEMOS SUS INGREDIENTES    
+                        # PENDING ES LA CANTIDAD QUE NO PUDE PEDIR  
+                        try:            
+                            request_for_ingredient(sku, pending, current_sku_stocks, inventories)
+                        except Exception as ex:
+                            print("ERROR request for ingrediente: ", ex)
+       
                     
 
 def request_for_ingredient(sku, pending, current_sku_stocks, inventories):
