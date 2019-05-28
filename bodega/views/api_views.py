@@ -92,7 +92,7 @@ def orders(request):
 
 def test(request):
     # watch_server()
-    # thread_check()
+    thread_check()
     # current_stocks, current_sku_stocks = get_inventory()
     # request_for_ingredient('1106', 10, current_sku_stocks, {})
     return JsonResponse({'test': 'working'}, safe=False, status=200)

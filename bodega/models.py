@@ -51,7 +51,7 @@ class PurchaseOrder(models.Model):
     provider = models.CharField(max_length=255)
     amount = models.IntegerField()
     price = models.IntegerField()
-    state = models.CharField(default="creada", max_length=255)
+    state = models.CharField(default="creada", max_length=255)  #creada, aceptada, terminada, vencida
     channel = models.CharField(max_length=255)
     deadline = models.DateTimeField()  #maximo tiempo de espera
 
