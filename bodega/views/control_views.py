@@ -26,6 +26,8 @@ def inventory_info(request):
     context = {'current_stocks': current_stocks, "current_sku_stocks": current_sku_stocks, 'form': form, 'prod': prod}
     return render(request, 'inventory.html', context)
 
+def ftp_info(request):
+    return render(request, 'ftp.html', {test: 'hola'})
 
 def pedir(request):
     # if this is a POST request we need to process the form data
