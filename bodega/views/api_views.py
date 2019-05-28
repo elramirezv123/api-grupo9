@@ -94,12 +94,6 @@ def test(request):
     # watch_server()
     # thread_check()
     # check_not_finished()
-    uuids = ['68295f5d-2304-49eb-be10-744ea6d72edf', '4cefce03-ee01-47bc-aff1-adeb31522ff7', '3cb205d5-2a92-44ab-bc18-3813d7ed40f9',
-     '57554e5c-546d-4afb-be27-fdacff5975d6', '283e2896-e16d-4411-a9a3-6fdc6f24ed11']
-    for uuid in uuids:
-        new_oc = PurchaseOrder.objects.create(oc_id=uuid, sku=101, client="cliente", provider="prov",
-                                          amount=10, price=1000, channel='ftp', deadline=datetime.now(), finished=False)
-        new_oc.save()
     # current_stocks, current_sku_stocks = get_inventory()
     # request_for_ingredient('1106', 10, current_sku_stocks, {})
     return JsonResponse({'test': 'working'}, safe=False, status=200)
