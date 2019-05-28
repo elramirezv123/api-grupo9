@@ -5,7 +5,7 @@
 prod = True
 # apiKey = "R&FTHQi3AkqUx%6"
 # apiURL = "https://integracion-2019-dev.herokuapp.com/bodega/"
-ocURL = "https://integracion-2019-dev.herokuapp.com/oc/"
+# ocURL = "https://integracion-2019-dev.herokuapp.com/oc/"
 
 # id_grupos = {
 #     '1': '5cbd31b7c445af0004739be3',
@@ -40,6 +40,7 @@ ocURL = "https://integracion-2019-dev.herokuapp.com/oc/"
 
 apiKey = "R&FTHQi3AkqUx%6"
 apiURL = "https://integracion-2019-prod.herokuapp.com/bodega/"
+ocURL = "https://integracion-2019-prod.herokuapp.com/oc/"
 
 id_grupos = {
     '1': '5cc66e378820160004a4c3bc',
