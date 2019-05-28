@@ -3,7 +3,7 @@ from bodega.constants.config import almacenes, id_grupos
 from bodega.models import Product, Ingredient, Request, PurchaseOrder
 from bodega.helpers.bodega_functions import get_skus_with_stock, get_almacenes, get_products_with_sku, send_product
 from bodega.helpers.bodega_functions import make_a_product, move_product_inter_almacen, move_product_to_another_group
-from bodega.helpers.oc_functions import newOc, updateOC
+from bodega.helpers.oc_functions import newOc, updateOC, getOc
 from bodega.helpers.utils import toMiliseconds
 import requests
 import json
@@ -72,23 +72,29 @@ def thread_check():
             print("CURRENT STOCK DE: {0} es {1}".format(sku, product_current_stock))
             if product_current_stock < int(minimum_stock[sku]*1.1):        
                 cantidad_faltante = int(minimum_stock[sku]*1.1) - product_current_stock
-                pedidos = PurchaseOrder.objects.filter(sku=int(sku), state="creada")
+                pedidos = PurchaseOrder.objects.filter(sku=int(sku), state="creada") | PurchaseOrder.objects.filter(sku=int(sku), state="aceptada")
+                # si es asi, entonces voy a verificar si ha sido terminada con get oc
                 cant = 0
                 for ped in pedidos:
-                    now = datetime.datetime.now().replace(tzinfo=pytz.UTC)
-                    deadline = ped.deadline.replace(tzinfo=pytz.UTC)
-                    print("NOW: {0}, DEADLINE: {1}".format(now, deadline))
-                    if deadline > now:
-                        cant += ped.amount
+                    c = getOc(ped.oc_id)[0]
+                    if(c.state.upper() != "TERMINADA"):
+                        now = datetime.datetime.now().replace(tzinfo=pytz.UTC)
+                        deadline = ped.deadline.replace(tzinfo=pytz.UTC)
+                        print("NOW: {0}, DEADLINE: {1}".format(now, deadline))
+                        if deadline > now:
+                            cant += ped.amount
+                        else:
+                            # YA PASO SU HORA, HAY QUE BORRARLO
+                           ped.state = "vencida"
                     else:
-                        # YA PASO SU HORA, HAY QUE BORRARLO
-                        ped.delete()
+                        ped.state = c.state
                 cantidad_faltante -= cant
                 print("CANTIDAD A LA ESPERA DE LLEGADA: ", cant)
                 print("CANTIDAD A PEDIR: ", cantidad_faltante)
                 is_ok, pending = request_sku_extern(sku, cantidad_faltante, inventories)  #inventories queda poblado
                 print("LA ORDEN FUE RESPONDIDA CON: ", is_ok)
                 print("QUEDA PENDIENTE: ", pending)
+                return
                 if not is_ok and pending > 0:
                     # VERIFICAMOS SI TENEMOS SUS INGREDIENTES    
                     # PENDING ES LA CANTIDAD QUE NO PUDE PEDIR              
@@ -159,18 +165,22 @@ def request_for_ingredient(sku, pending, current_sku_stocks, inventories):
                         # NO ES NUESTRO
                         # ENTONCES DEBEMOS PEDIR LO QUE NOS FALTA PARA COMPLETAR
                         # VERIFICAMOS SI YA LO PEDIMOS, HACIENDO LA SUMA DE LOS PEDIDOS
-                        pedidos = PurchaseOrder.objects.filter(sku=int(ing_sku), state="creada")
+                        pedidos = PurchaseOrder.objects.filter(sku=int(sku), state="creada") | PurchaseOrder.objects.filter(sku=int(sku), state="aceptada")
+                        # si es asi, entonces voy a verificar si ha sido terminada con get oc
                         cant = 0
                         for ped in pedidos:
-                            now = datetime.datetime.now().replace(tzinfo=pytz.UTC)
-                            deadline = ped.deadline.replace(tzinfo=pytz.UTC)
-                            print("NOW: {0}, DEADLINE: {1}".format(now, deadline))
-                            if deadline > now:
-                                cant += ped.amount
+                            c = getOc(ped.oc_id)
+                            if(c.state.upper() != "TERMINADA"):
+                                now = datetime.datetime.now().replace(tzinfo=pytz.UTC)
+                                deadline = ped.deadline.replace(tzinfo=pytz.UTC)
+                                print("NOW: {0}, DEADLINE: {1}".format(now, deadline))
+                                if deadline > now:
+                                    cant += ped.amount
+                                else:
+                                    # YA PASO SU HORA, HAY QUE BORRARLO
+                                    ped.state = "vencida"
                             else:
-                                # YA PASO SU HORA, HAY QUE BORRARLO
-                                print("EL PEDIDO {0} VENCIO CON FECHA {1}".format(ped.oc_id, ped.deadline))
-                                ped.delete()
+                                ped.state = c.state
                         print("PASO PEDIDOS")                        
                         cantidad_ingrediente_a_pedir = pending - cant
                         if cantidad_ingrediente_a_pedir > 0:
@@ -193,16 +203,22 @@ def request_for_ingredient(sku, pending, current_sku_stocks, inventories):
             # NO ES NUESTRO
             # ENTONCES DEBEMOS PEDIR LO QUE NOS FALTA PARA COMPLETAR
             # VERIFICAMOS SI YA LO PEDIMOS, HACIENDO LA SUMA DE LOS PEDIDOS
-            pedidos = PurchaseOrder.objects.filter(sku=int(sku))
+            pedidos = PurchaseOrder.objects.filter(sku=int(sku), state="creada") | PurchaseOrder.objects.filter(sku=int(sku), state="aceptada")
+            # si es asi, entonces voy a verificar si ha sido terminada con get oc
             cant = 0
             for ped in pedidos:
-                now = datetime.datetime.now().replace(tzinfo=pytz.UTC)
-                deadline = ped.deadline.replace(tzinfo=pytz.UTC)
-                print("NOW: {0}, DEADLINE: {1}".format(now, deadline))
-                if deadline > now:
-                    cant += ped.amount
+                c = getOc(ped.oc_id)
+                if(c.state.upper() != "TERMINADA"):
+                    now = datetime.datetime.now().replace(tzinfo=pytz.UTC)
+                    deadline = ped.deadline.replace(tzinfo=pytz.UTC)
+                    print("NOW: {0}, DEADLINE: {1}".format(now, deadline))
+                    if deadline > now:
+                        cant += ped.amount
+                    else:
+                        # YA PASO SU HORA, HAY QUE BORRARLO
+                        ped.state = "vencida"
                 else:
-                    ped.delete()
+                    ped.state = c.state
             cantidad_ingrediente_a_pedir = pending - cant  # LO QUE AUN NO SE HA PEDIDO
             is_ok, pending2 = request_sku_extern(sku, cantidad_ingrediente_a_pedir, inventories)
             if pending2:
@@ -277,7 +293,7 @@ def get_sku_stock_extern(group_number, sku, inventories):
             response = json.loads(response.text)
             inventories[group_number] = response
             print("Sku que estoy preguntando: ", sku)
-            print("Response1:", response, type(response))
+            #print("Response1:", response, type(response))
             if len(response) > 0:
                 for product in response:
                     gotcha = product.get("sku", False)
@@ -340,7 +356,7 @@ def request_sku_extern(sku, quantity, inventories):
                 try:
                     print("Response.text:", response.text)
                     response = json.loads(response.text)
-                    print("Response2:", response)
+                    #print("Response2:", response)
                     if response["aceptado"]:
                         print("Me lo aceptaron yupi")
                         pending -= float(response["cantidad"])
@@ -351,6 +367,7 @@ def request_sku_extern(sku, quantity, inventories):
                             return True, 0
                 except Exception as err:
                     print("Este error: ", err)
+                    print("RESPONSE CON ERROR: ", response)
                     continue
     return False, pending
 
