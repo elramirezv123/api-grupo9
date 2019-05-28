@@ -10,9 +10,14 @@ from bodega.constants.logic_constants import *
 from bodega.helpers.functions import get_inventories
 
 def check_not_finished():
-    inventories = get_inventories()
-
-    print(inventories)
+    not_finished_ocs = PurchaseOrder.objects.filter(finished=False)
+    if not_finished_ocs:
+        inventories = get_inventories()
+        for oc in not_finished_ocs:
+            # Chequear si tenemos del producto final
+            # Si? Despacharlo 
+            # No? Seguir con el siguiente e intentar más tarde
+            pass
 
 def watch_server():
     """
