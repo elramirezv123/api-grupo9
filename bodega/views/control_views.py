@@ -2,7 +2,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django import template
 from bodega.helpers.functions import get_almacenes, get_inventory, make_a_product, make_space_in_almacen, send_to_somewhere
-from bodega.models import Product, Ingredient
+from bodega.models import Product, Ingredient, PurchaseOrder
 from bodega.constants.config import prod, almacenes
 from django.shortcuts import redirect
 from django import forms
@@ -26,6 +26,12 @@ def inventory_info(request):
     context = {'current_stocks': current_stocks, "current_sku_stocks": current_sku_stocks, 'form': form, 'prod': prod}
     return render(request, 'inventory.html', context)
 
+def ftp_info(request):
+    ocs = PurchaseOrder.objects.filter(finished=False, channel='ftp')
+    ocs_info = {}
+    for oc in ocs:
+        ocs_info[oc.oc_id] = {"sku": oc.sku, "client": oc.client, "provider": oc.provider, "amount": oc.amount}
+    return render(request, 'ftp.html', {'ocs': ocs_info})
 
 def pedir(request):
     # if this is a POST request we need to process the form data

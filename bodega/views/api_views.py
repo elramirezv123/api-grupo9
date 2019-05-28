@@ -3,9 +3,9 @@ from datetime import datetime, timedelta
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from bodega.constants.config import almacenes
-from bodega.helpers.handling_orders import watch_server
+from bodega.helpers.handling_orders import watch_server, check_not_finished
 from bodega.constants.logic_constants import sku_products
-from bodega.models import Product, Ingredient, Request, File
+from bodega.models import Product, Ingredient, Request, File, PurchaseOrder
 from bodega.helpers.functions import send_order_another_group, get_stock_sku, validate_post_body, is_our_product, request_for_ingredient
 from bodega.helpers.functions import get_request_body, get_inventory, get_inventories, request_sku_extern, thread_check
 from bodega.helpers.bodega_functions import get_skus_with_stock
@@ -92,7 +92,8 @@ def orders(request):
 
 def test(request):
     # watch_server()
-    thread_check()
+    # thread_check()
+    # check_not_finished()
     # current_stocks, current_sku_stocks = get_inventory()
     # request_for_ingredient('1106', 10, current_sku_stocks, {})
     return JsonResponse({'test': 'working'}, safe=False, status=200)

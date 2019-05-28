@@ -54,6 +54,7 @@ class PurchaseOrder(models.Model):
     state = models.CharField(default="creada", max_length=255)  #creada, aceptada, terminada, vencida
     channel = models.CharField(max_length=255)
     deadline = models.DateTimeField()  #maximo tiempo de espera
+    finished = models.BooleanField(default=True)
 
 class File(models.Model):
     filename = models.CharField(max_length=255)
