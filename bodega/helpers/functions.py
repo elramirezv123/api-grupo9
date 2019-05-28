@@ -364,7 +364,7 @@ def is_our_product(sku):
 
 def get_inventories():
     stock, _ = get_inventory()
-    return [{"sku": sku, "total": cantidad} for sku,cantidad in _.items()]
+    return [{"sku": sku, "total": cantidad, "nombre": Product.objects.get(sku=sku).name} for sku,cantidad in _.items()]
 
 def move_products(products, almacenId):
     # Recorre la lista de productos que se le entrega y lo mueve entre almacenes (solo de nosotros)

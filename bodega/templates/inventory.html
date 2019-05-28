@@ -9,7 +9,7 @@
 <h1>Stocks de los inventarios</h1>
 {% if current_sku_stocks|length > 0 %}
 {% for key, almacen in current_stocks.items %}
-    <h1>{{key}}: {{almacen}}</h1>
+    <h3>{{key}}: {{almacen}}</h3>
     {% endfor %}
 {% else %}
 <h1>Aún no hay inventario :(</h1>

@@ -50,10 +50,12 @@ def preparar(request):
             cantidad = int(form.cleaned_data['cantidad'])
             make_space_in_almacen("despacho", "libre2", 177, [i.sku_ingredient.sku for i in ingredientes])
             response = make_a_product(int(sku), cantidad)
+            print(response)
             if not response.get("sku", False):
                 for ingredient in ingredientes:
                     send_to_somewhere(str(ingredient.sku_ingredient.sku), ingredient.volume_in_store*cantidad, almacenes["despacho"])
                 response = make_a_product(int(sku), cantidad)
+                print(response)
             return HttpResponseRedirect('inventario')
 
 def vaciar(request):
