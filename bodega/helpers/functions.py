@@ -160,16 +160,17 @@ def thread_check():
                         is_ok, pending = request_sku_extern(sku, cantidad_faltante, inventories)  #inventories queda poblado
                         print("LA ORDEN FUE RESPONDIDA CON: ", is_ok)
                         print("QUEDA PENDIENTE: ", pending)
+                        if not is_ok and pending > 0:
+                            # VERIFICAMOS SI TENEMOS SUS INGREDIENTES    
+                            # PENDING ES LA CANTIDAD QUE NO PUDE PEDIR  
+                            try:            
+                                request_for_ingredient(sku, pending, current_sku_stocks, inventories)
+                            except Exception as ex:
+                                print("ERROR request for ingrediente: ", ex)
                     except Exception as ex:
                         pending = -2
                         print("ERROR THREAD_CHECK: ", ex)
-                    if not is_ok and pending > 0:
-                        # VERIFICAMOS SI TENEMOS SUS INGREDIENTES    
-                        # PENDING ES LA CANTIDAD QUE NO PUDE PEDIR  
-                        try:            
-                            request_for_ingredient(sku, pending, current_sku_stocks, inventories)
-                        except Exception as ex:
-                            print("ERROR request for ingrediente: ", ex)
+                
        
                     
 
@@ -343,7 +344,7 @@ def get_sku_stock_extern(group_number, sku, inventories):
     """
     inventorie = inventories.get(group_number, False)
     if inventorie:
-        print("Ya tengo su inventario")
+        print("Ya tengo su inventario", inventorie)
         for product in inventorie:
             gotcha = product.get("sku", False)
             if gotcha:
@@ -359,6 +360,7 @@ def get_sku_stock_extern(group_number, sku, inventories):
         try:
             response = requests.get("http://tuerca{}.ing.puc.cl/inventories".format(group_number))
             response = json.loads(response.text)
+            print(response)
             inventories[group_number] = response
             print("Sku que estoy preguntando: ", sku)
             #print("Response1:", response, type(response))
@@ -396,7 +398,7 @@ def send_oc(group_number, product, quantity):
             }
     response = requests.post("http://tuerca{}.ing.puc.cl/orders".format(group_number),
                             headers=headers, json=body)
-    
+    print("Termino el response")
     return response
 
 def request_sku_extern(sku, quantity, inventories):
@@ -447,9 +449,14 @@ def validate_post_body(body):
 def is_our_product(sku):
     return int(sku) in sku_products
 
-def get_inventories():
+def get_inventories(view=False):
     stock, _ = get_inventory()
-    return [{"sku": sku, "total": cantidad, "nombre": Product.objects.get(sku=sku).name} for sku,cantidad in _.items()]
+    if not view:
+        return [{"sku": sku, "total": cantidad, "nombre": Product.objects.get(sku=sku).name} for sku,cantidad in _.items()]
+    else:
+        return [{"sku": sku, "total": int(cantidad*0.5), "nombre": Product.objects.get(sku=sku).name} for sku,cantidad in _.items()]
+
+
 
 def move_products(products, almacenId):
     # Recorre la lista de productos que se le entrega y lo mueve entre almacenes (solo de nosotros)
@@ -546,5 +553,5 @@ def send_order_another_group(order_id):
         order_entity.update(state="enviada")
 
     else:
-        make_space_in_almacen('despacho', 'pulmon', amount)
+        make_space_in_almacen('despacho', 'libre2', amount)
         send_order_another_group(order_id)

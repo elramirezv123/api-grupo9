@@ -34,7 +34,7 @@ def inventories(request):
     '''
     response = []
     if request.method == 'GET':
-        return JsonResponse(get_inventories(), safe=False)
+        return JsonResponse(get_inventories(True), safe=False)
 
     if request.method == 'DELETE':
         pass
@@ -91,10 +91,8 @@ def orders(request):
 
 
 def test(request):
-    response = get_skus_with_stock(almacenes["pulmon"])
-    print(response)
     # watch_server()
-    # thread_check()
+    thread_check()
     # check_not_finished()
     # current_stocks, current_sku_stocks = get_inventory()
     # request_for_ingredient('1106', 10, current_sku_stocks, {})
