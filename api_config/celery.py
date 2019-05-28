@@ -11,15 +11,21 @@ app = Celery('api_config')
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
 app.conf.beat_schedule = {
-    'add-every-300-seconds': {  #name of the scheduler
+    'thread-check-600-seconds': {  #name of the scheduler
         'task': 'thread-check',  # task name which we have created in tasks.py
-        'schedule': 300.0,   # set the period of running
+        'schedule': 600.0,   # set the period of running
                             # set the args
-    }
+    },
+
+    'thread-check-1000-600-seconds': {  #name of the scheduler
+    'task': 'thread-check-10000',  # task name which we have created in tasks.py
+    'schedule': 600.0,   # set the period of running
+                        # set the args
+}
 }
 
 app.autodiscover_tasks()
 
 @app.task(bind=True)
 def debug_task(self):
-    print('Request: {0!r}'.format(self.request))
+    print('Request: {0!r}'.format(self.request)) 

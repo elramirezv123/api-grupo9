@@ -91,6 +91,8 @@ def orders(request):
 
 
 def test(request):
+    response = get_skus_with_stock(almacenes["pulmon"])
+    print(response)
     # watch_server()
     # thread_check()
     # check_not_finished()

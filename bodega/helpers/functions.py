@@ -108,8 +108,11 @@ def thread_check_10000():
                     max_cant_producible = min(check_ingre.values())     
                     print("MAXIMA CANTIDAD PRODUCIBLE: ", max_cant_producible) 
                     #TODOS PRODUCEN LOS DE NIVEL 10 MIL, ENTONCES MANDO A PRODUCIR
-                    if max_cant_producible > 0: 
+                    if max_cant_producible > 0:
+                        make_space_in_almacen("despacho", "libre2", max_cant_producible)
+                        send_to_somewhere(sku, max_cant_producible, almacenes["despacho"]) 
                         make_a_product(sku, max_cant_producible)
+
                     if max_cant_producible < pending:
                         for ingree in check_ingre:
                             if check_ingre[ingree] == max_cant_producible:
@@ -126,7 +129,6 @@ def thread_check():
     current_sku_stocks: {sku: <cantidad>} (cantidad total por sku)
     '''
     current_stocks, current_sku_stocks = get_inventory()
-    print("current stock: ", current_sku_stocks)
     minimum_stock_list = list(minimum_stock.keys())  #en batches
     random.shuffle(minimum_stock_list)
     inventories = {}
@@ -134,7 +136,6 @@ def thread_check():
             if int(sku) < 10000:
                 print("SKU a preguntar: ", sku)
                 product_current_stock = current_sku_stocks.get(sku, 0)
-                print("CURRENT STOCK DE: {0} es {1}".format(sku, product_current_stock))
                 if product_current_stock < int(minimum_stock[sku]*3):        
                     try:
                         cantidad_faltante = int(minimum_stock[sku]*3) - product_current_stock
@@ -146,7 +147,6 @@ def thread_check():
                             if(c.state.upper() != "TERMINADA"):
                                 now = datetime.datetime.now().replace(tzinfo=pytz.UTC)
                                 deadline = ped.deadline.replace(tzinfo=pytz.UTC)
-                                print("NOW: {0}, DEADLINE: {1}".format(now, deadline))
                                 if deadline > now:
                                     cant += ped.amount
                                 else:
@@ -185,50 +185,44 @@ def request_for_ingredient(sku, pending, current_sku_stocks, inventories):
         # cantidad para todos los ingredientes
         for ing in ingredients:
             # estos ingredientes seran si o si de nivel 100, por lo que no son compuestos
-            print("VERIFICANDO INGREDIENTE {0} PARA EL PRODUCTO {1}".format(ing.sku_ingredient.sku, ing.sku_product.sku))
             ingre_sku = ing.sku_ingredient.sku  #obtenemos el sku del ingrediente
             stock_we_have = current_sku_stocks.get(ingre_sku, 0)
-            print("STOCK QUE TENEMOS: ", stock_we_have)
             # volume in store almacena la cantidad de ese ingrediente por producto
             # GUARDO PARA CUANTOS BATCH del producto ME ALCANZAN ESE INGREDIENTE
             check_ingre[ingre_sku] = int(stock_we_have / ing.volume_in_store)
         
         # una vez chequeo todos, obtengo la maxima cantidad de bach que podre producir
-        max_cant_producible = min(check_ingre.values())     
-        print("MAXIMA CANTIDAD PRODUCIBLE: ", max_cant_producible)   
+        max_cant_producible = min(check_ingre.values())        
         # verifico si alcanza
         # mando a  producir el minimo entre max_cant y pending
         cant_a_producir = min(pending, max_cant_producible)
-        print("CANTIDAD A PRODUCIR: ", cant_a_producir)
         # MANDO A PRODUCIR LA cantidad_a_producir
         # UN BATCH A LA VEZ PARA NO LLENAR DESPACHO
         # ASUMO QUE DESPACHO ESTA VACIO        
         copy_new_pending = cant_a_producir #en batch
         while copy_new_pending > 0:
+            make_space_in_almacen("despacho", "libre2", 120, [i.sku_ingredient.sku for i in ingredients])
             for ing in ingredients:
                 ing_sku = ing.sku_ingredient.sku               
                 # MOVEMOS A DESPACHO LO NECESARIO PARA UN BATCH
                 send_to_somewhere(ing_sku, ing.volume_in_store, almacenes["despacho"])   
             # UNA VEZ TODOS EN DESPACHO, MANDO A PRODUCIR
             produ = Product.objects.filter(sku=int(sku))
-            print("PRODUCTO: ", produ.sku)
             make_a_product(sku, produ.batch)
-            print("LISTO MAKE_A_PRODUCT")
             copy_new_pending -= 1  
         if cant_a_producir < pending:
             new_pending = pending - max_cant_producible
             # NO ALCANZA
-            print("NEW PENDING: ", new_pending)
             for ing_sku in check_ingre:
                 # ACTUALIZO
                 check_ingre[ing_sku] -= max_cant_producible  #saco los ingredientes que se usaron
-                print("check_ingre: ", check_ingre)
                 # AHORA REVISO POR INGREDIENTE SI ME ALCANZA PARA EL RESTO DE LOS BATCH          
                 if check_ingre[ing_sku] < new_pending:
                     # NO ME ALCANZA EL INGREDIENTE PARA PRODUCIR LO QUE NECESITO
                     # VERIFICAMOS SI YO LO PRODUZCO
                     if ing_sku in sku_products:
-                        print("SI LO PRODUCIMOS")
+                        make_space_in_almacen("despacho", "libre2", check_ingre[ing_sku])
+                        send_to_somewhere(ing_sku, check_ingre[ing_sku], almacenes["despacho"])
                         # SI LO PRODUZCO
                         # MANDO A PRODUCIR TOD LO QUE NECESITO YA QUE ES DE NIVEL 100
                         make_a_product(ing_sku, check_ingre[ing_sku])
@@ -270,6 +264,8 @@ def request_for_ingredient(sku, pending, current_sku_stocks, inventories):
         if sku in sku_products: 
             # ES NUESTRO
             # MANDO A PRODUCIR todo LO QUE NECESITO YA QUE ES DE NIVEL 100
+            make_space_in_almacen("despacho", "libre2", pending)
+            send_to_somewhere(sku, pending, almacenes["despacho"])
             make_a_product(sku, pending)
         else:
             # NO ES NUESTRO
