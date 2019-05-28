@@ -22,6 +22,7 @@ class Migration(migrations.Migration):
                 ('state', models.CharField(default='creada', max_length=255)),
                 ('channel', models.CharField(max_length=255)),
                 ('deadline', models.DateTimeField()),
+                ('finished', models.BooleanField(default=True)),
             ],
         ),
     ]
