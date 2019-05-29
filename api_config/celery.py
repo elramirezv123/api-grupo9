@@ -26,12 +26,23 @@ app.conf.beat_schedule = {
     'task': 'watch-server',  # task name which we have created in tasks.py
     'schedule': 900.0,   # set the period of running
                         # set the args
-},
+    },
     'check_not_finished-700-seconds': {  #name of the scheduler
         'task': 'check_not_finished',  # task name which we have created in tasks.py
         'schedule': 700.0,   # set the period of running
                             # set the args
+    },
+    'create-base-products': {  #name of the scheduler
+        'task': 'base-products',  # task name which we have created in tasks.py
+        'schedule': 1200.0,   # set the period of running
+                            # set the args
+    },
+        'get-base-products': {  #name of the scheduler
+        'task': 'get-base-products',  # task name which we have created in tasks.py
+        'schedule': 1200.0,   # set the period of running
+                            # set the args
     }
+
     
 }
 
