@@ -54,12 +54,14 @@ def preparar(request):
             sku = form.cleaned_data['sku']
             ingredientes = Ingredient.objects.filter(sku_product=int(sku))
             cantidad = int(form.cleaned_data['cantidad'])
-            make_space_in_almacen("despacho", "libre2", 177, [i.sku_ingredient.sku for i in ingredientes])
+            # make_space_in_almacen("despacho", "libre2", 177, [i.sku_ingredient.sku for i in ingredientes])
             response = make_a_product(int(sku), cantidad)
             print(response)
             if not response.get("sku", False):
+                print(ingredientes)
                 for ingredient in ingredientes:
-                    send_to_somewhere(str(ingredient.sku_ingredient.sku), ingredient.volume_in_store*cantidad, almacenes["despacho"])
+                    if str(ingredient.sku_ingredient.sku) != "1001" and str(ingredient.sku_ingredient.sku) != "1003":
+                        send_to_somewhere(str(ingredient.sku_ingredient.sku), int(cantidad/ingredient.volume_in_store+1), almacenes["despacho"])
                 response = make_a_product(int(sku), cantidad)
                 print(response)
             return HttpResponseRedirect('inventario')

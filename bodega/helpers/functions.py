@@ -464,12 +464,14 @@ def move_products(products, almacenId):
     for product in products:
         producto_movidos.append(product)
         response = move_product_inter_almacen(product["_id"], almacenId)
+        print(response)
     return producto_movidos
 
 def send_to_somewhere(sku, cantidad, to_almacen):
     # Mueve el producto y la cantidad que se quiera hacia el almacen que se quiera (solo de nosotros)
     producto_movidos = []
     for almacen, almacenId in almacenes.items():
+        print(almacen)
         if almacen != "despacho" and almacenId != to_almacen:
             products = get_products_with_sku(almacenId, sku)
             diff = len(products) - cantidad
