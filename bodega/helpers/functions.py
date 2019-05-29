@@ -541,7 +541,7 @@ def make_space_in_almacen(almacen_name, to_almacen_name, amount_to_free, banned_
 def send_order_another_group(order_id):
     #esta funcion mueve el producto a despacho
     # para luego enviar ese producto al grupo que lo pidio
-    order_entity = PurchaseOrder.objects.filter(oc_id=int(order_id))
+    order_entity = PurchaseOrder.objects.filter(oc_id=order_id)
     order_entity = order_entity.get()
     sku = order_entity.sku
     amount = order_entity.amount
