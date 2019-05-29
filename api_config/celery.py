@@ -23,7 +23,7 @@ app.conf.beat_schedule = {
                         # set the args
     },
     'watch-server-900-seconds': {  #name of the scheduler
-    'task': 'watch-server',  # task name which we have created in tasks.py
+    'task': 'watch_server',  # task name which we have created in tasks.py
     'schedule': 900.0,   # set the period of running
                         # set the args
     },
@@ -33,12 +33,12 @@ app.conf.beat_schedule = {
                             # set the args
     },
     'create-base-products': {  #name of the scheduler
-        'task': 'base-products',  # task name which we have created in tasks.py
+        'task': 'base_products',  # task name which we have created in tasks.py
         'schedule': 1200.0,   # set the period of running
                             # set the args
     },
         'get-base-products': {  #name of the scheduler
-        'task': 'get-base-products',  # task name which we have created in tasks.py
+        'task': 'get_base_products',  # task name which we have created in tasks.py
         'schedule': 1200.0,   # set the period of running
                             # set the args
     }

@@ -11,7 +11,7 @@ def wrapper(*args, **kwargs):
 def wrapper2(*args, **kwargs):
     thread_check_10000()
 
-@shared_task(name='watch-server')
+@shared_task(name='watch_server')
 def wrapper3(*args, **kwargs):
     watch_server()
 
@@ -19,10 +19,10 @@ def wrapper3(*args, **kwargs):
 def wrapper4(*args, **kwargs):
     check_not_finished()
 
-@shared_task(name='base-products')
+@shared_task(name='base_products')
 def wrapper5(*args, **kwargs):
     create_base_products()
 
-@shared_task(name='get-base-products')
+@shared_task(name='get_base_products')
 def wrapper6(*args, **kwargs):
     get_base_products()
