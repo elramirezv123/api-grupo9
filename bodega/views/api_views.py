@@ -6,8 +6,7 @@ from bodega.constants.config import almacenes
 from bodega.helpers.handling_orders import watch_server, check_not_finished
 from bodega.constants.logic_constants import sku_products
 from bodega.models import Product, Ingredient, Request, File, PurchaseOrder
-from bodega.helpers.functions import send_order_another_group, get_stock_sku, validate_post_body, is_our_product, request_for_ingredient
-from bodega.helpers.functions import get_request_body, get_inventory, get_inventories, request_sku_extern, thread_check
+from bodega.helpers.functions import *
 from bodega.helpers.bodega_functions import get_skus_with_stock
 from bodega.helpers.oc_functions import getOc, declineOc, receiveOc
 
@@ -96,6 +95,7 @@ def test(request):
     print(response)
     # thread_check()
     # check_not_finished()
+    # res = make_space_in_almacen('recepcion', 'libre1', 50, [1110, 1001, 1013, 1002, 1009])
     # current_stocks, current_sku_stocks = get_inventory()
     # request_for_ingredient('1106', 10, current_sku_stocks, {})
     return JsonResponse({'test': 'working'}, safe=False, status=200)
