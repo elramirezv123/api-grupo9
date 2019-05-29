@@ -22,11 +22,17 @@ app.conf.beat_schedule = {
     'schedule': 1200.0,   # set the period of running
                         # set the args
     },
-        'watch-server-900-seconds': {  #name of the scheduler
-        'task': 'watch-server',  # task name which we have created in tasks.py
-        'schedule': 900.0,   # set the period of running
+    'watch-server-900-seconds': {  #name of the scheduler
+    'task': 'watch-server',  # task name which we have created in tasks.py
+    'schedule': 900.0,   # set the period of running
+                        # set the args
+},
+    'check_not_finished-700-seconds': {  #name of the scheduler
+        'task': 'check_not_finished',  # task name which we have created in tasks.py
+        'schedule': 700.0,   # set the period of running
                             # set the args
     }
+    
 }
 
 app.autodiscover_tasks()
