@@ -91,8 +91,8 @@ def orders(request):
 
 def test(request):
     # watch_server()
-    response = get_skus_with_stock(almacenes["pulmon"])
-    print(response)
+    # response = get_skus_with_stock(almacenes["pulmon"])
+    # print(response)
     # thread_check()
     # check_not_finished()
     # res = make_space_in_almacen('recepcion', 'libre1', 50, [1110, 1001, 1013, 1002, 1009])
