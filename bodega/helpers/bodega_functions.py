@@ -13,16 +13,6 @@ def get_skus_with_stock(almacenId):
         apiURL + "skusWithStock?almacenId={}".format(almacenId), headers=headers)
     return response.json()
 
-# def get_skus_with_stock(productoId):
-#     direccion = 'CualquierCosa'
-#     precio = 100
-#     # Esta funcion permite obtener todos los sku no vencidos de algún almacén
-#     hash = hashQuery("DELETE"+productoId+direccion+str(precio))
-#     headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
-#     response = requests.delete(
-#         apiURL + "stock", headers=headers)
-#     return response.json()
-
 
 def get_products_with_sku(almacenId, sku):
     # Esta función permite obtener los primeros 100 productos (default) no vencidos
