@@ -1,0 +1,32 @@
+<style>
+  table,
+  th,
+  td {
+    border: 1px solid black;
+  }
+</style>
+<h1>Ordenes de compra de FTP no finalizadas</h1>
+<table>
+  <tr>
+    <th>ID</th>
+    <th>SKU</th>
+    <th>Cantidad</th>
+    <th>Deadline</th>
+  </tr>
+  {% for k, v in ocs.items %}
+  <tr>
+    <td>
+      {{ k }}
+    </td>
+    <td>
+      {{ v.sku }}
+    </td>
+    <td>
+      {{ v.amount }}
+    </td>
+    <td>
+      {{ v.deadline }}
+    </td>
+  </tr>
+  {% endfor %}
+</table>
