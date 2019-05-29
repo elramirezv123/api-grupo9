@@ -109,8 +109,8 @@ def thread_check_10000():
                     print("MAXIMA CANTIDAD PRODUCIBLE: ", max_cant_producible) 
                     #TODOS PRODUCEN LOS DE NIVEL 10 MIL, ENTONCES MANDO A PRODUCIR
                     if max_cant_producible > 0:
-                        make_space_in_almacen("despacho", "libre2", max_cant_producible)
-                        send_to_somewhere(sku, max_cant_producible, almacenes["despacho"]) 
+                        make_space_in_almacen("cocina", "libre2", max_cant_producible)
+                        send_to_somewhere(sku, max_cant_producible, almacenes["cocina"]) 
                         make_a_product(sku, max_cant_producible)
 
                     if max_cant_producible < pending:
