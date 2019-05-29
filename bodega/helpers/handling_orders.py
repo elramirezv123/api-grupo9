@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 import json
 import requests
 from bodega.models import File, PurchaseOrder, Ingredient
-from bodega.helpers.oc_functions import getOc
+from bodega.helpers.oc_functions import getOc, receiveOc
 from bodega.helpers.bodega_functions import *
 from bodega.constants.config import ocURL, almacenes
 from .utils import hashQuery
@@ -93,6 +93,7 @@ def watch_server():
                             oc_id = node.text
                             raw_response = getOc(oc_id)
                             if raw_response:
+                                response = receiveOc(oc_id)
                                 response = raw_response[0]
                                 file_entity= File.objects.create(filename=attr.filename,
                                                         processed=True,
@@ -102,3 +103,4 @@ def watch_server():
                                                                     amount=response['cantidad'], price=response["precioUnitario"], channel=response['canal'], deadline=deadline, finished=False)
                                 file_entity.save()
                                 new_oc.save()
+                                

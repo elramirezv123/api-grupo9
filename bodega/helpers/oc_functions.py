@@ -39,7 +39,7 @@ def getOc(ocId):
 
 
 def receiveOc(ocId):
-    body = {"_id": ocId}
+    body = {"id": ocId}
     response = requests.post(
         ocURL + "recepcionar/{}".format(ocId), headers=headers)
     return response.json()
