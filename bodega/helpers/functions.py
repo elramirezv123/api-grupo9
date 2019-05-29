@@ -68,8 +68,8 @@ def thread_check_10000():
                 # si es asi, entonces voy a verificar si ha sido terminada con get oc
                 cant = 0
                 for ped in pedidos:
-                    c = getOc(ped.oc_id)[0]
-                    if(c.state.upper() != "TERMINADA"):
+                    c = getOc(ped.oc_id)["estado"]
+                    if(c.upper() != "TERMINADA"):
                         now = datetime.datetime.now().replace(tzinfo=pytz.UTC)
                         deadline = ped.deadline.replace(tzinfo=pytz.UTC)
                         print("NOW: {0}, DEADLINE: {1}".format(now, deadline))
@@ -79,7 +79,7 @@ def thread_check_10000():
                             # YA PASO SU HORA, HAY QUE BORRARLO
                             ped.state = "vencida"
                     else:
-                        ped.state = c.state
+                        ped.state = c
                 cantidad_faltante -= cant
                 inventories = {}
                 is_ok, pending = request_sku_extern(sku, cantidad_faltante, inventories)  #inventories queda poblado
@@ -131,8 +131,8 @@ def thread_check():
                         # si es asi, entonces voy a verificar si ha sido terminada con get oc
                         cant = 0
                         for ped in pedidos:
-                            c = getOc(ped.oc_id)[0]
-                            if(c.state.upper() != "TERMINADA"):
+                            c = getOc(ped.oc_id)["estado"]
+                            if(c.upper() != "TERMINADA"):
                                 now = datetime.datetime.now().replace(tzinfo=pytz.UTC)
                                 deadline = ped.deadline.replace(tzinfo=pytz.UTC)
                                 if deadline > now:
@@ -141,7 +141,7 @@ def thread_check():
                                     # YA PASO SU HORA, HAY QUE BORRARLO
                                     ped.state = "vencida"
                             else:
-                                ped.state = c.state
+                                ped.state = c
                         cantidad_faltante -= cant
                         is_ok, pending = request_sku_extern(sku, cantidad_faltante, inventories)  #inventories queda poblado
                         if not is_ok and pending > 0:
@@ -218,8 +218,8 @@ def request_for_ingredient(sku, pending, current_sku_stocks, inventories):
                         # si es asi, entonces voy a verificar si ha sido terminada con get oc
                         cant = 0
                         for ped in pedidos:
-                            c = getOc(ped.oc_id)
-                            if(c.state.upper() != "TERMINADA"):
+                            c = getOc(ped.oc_id)["estado"]
+                            if(c.upper() != "TERMINADA"):
                                 now = datetime.datetime.now().replace(tzinfo=pytz.UTC)
                                 deadline = ped.deadline.replace(tzinfo=pytz.UTC)
                                 if deadline > now:
@@ -228,7 +228,7 @@ def request_for_ingredient(sku, pending, current_sku_stocks, inventories):
                                     # YA PASO SU HORA, HAY QUE BORRARLO
                                     ped.state = "vencida"
                             else:
-                                ped.state = c.state                      
+                                ped.state = c                  
                         cantidad_ingrediente_a_pedir = pending - cant
                         if cantidad_ingrediente_a_pedir > 0:
                             is_ok, pending = request_sku_extern(ing_sku, cantidad_ingrediente_a_pedir, inventories)
@@ -255,8 +255,8 @@ def request_for_ingredient(sku, pending, current_sku_stocks, inventories):
             # si es asi, entonces voy a verificar si ha sido terminada con get oc
             cant = 0
             for ped in pedidos:
-                c = getOc(ped.oc_id)
-                if(c.state.upper() != "TERMINADA"):
+                c = getOc(ped.oc_id)["estado"]
+                if(c.upper() != "TERMINADA"):
                     now = datetime.datetime.now().replace(tzinfo=pytz.UTC)
                     deadline = ped.deadline.replace(tzinfo=pytz.UTC)
                     if deadline > now:
@@ -265,7 +265,7 @@ def request_for_ingredient(sku, pending, current_sku_stocks, inventories):
                         # YA PASO SU HORA, HAY QUE BORRARLO
                         ped.state = "vencida"
                 else:
-                    ped.state = c.state
+                    ped.state = c
             cantidad_ingrediente_a_pedir = pending - cant  # LO QUE AUN NO SE HA PEDIDO
             is_ok, pending2 = request_sku_extern(sku, cantidad_ingrediente_a_pedir, inventories)
             if pending2:
