@@ -109,8 +109,8 @@ def thread_check_10000():
                     print("MAXIMA CANTIDAD PRODUCIBLE: ", max_cant_producible) 
                     #TODOS PRODUCEN LOS DE NIVEL 10 MIL, ENTONCES MANDO A PRODUCIR
                     if max_cant_producible > 0:
-                        make_space_in_almacen("despacho", "libre2", max_cant_producible)
-                        send_to_somewhere(sku, max_cant_producible, almacenes["despacho"]) 
+                        make_space_in_almacen("cocina", "libre2", max_cant_producible)
+                        send_to_somewhere(sku, max_cant_producible, almacenes["cocina"]) 
                         make_a_product(sku, max_cant_producible)
 
                     if max_cant_producible < pending:
@@ -464,12 +464,14 @@ def move_products(products, almacenId):
     for product in products:
         producto_movidos.append(product)
         response = move_product_inter_almacen(product["_id"], almacenId)
+        print(response)
     return producto_movidos
 
 def send_to_somewhere(sku, cantidad, to_almacen):
     # Mueve el producto y la cantidad que se quiera hacia el almacen que se quiera (solo de nosotros)
     producto_movidos = []
     for almacen, almacenId in almacenes.items():
+        print(almacen)
         if almacen != "despacho" and almacenId != to_almacen:
             products = get_products_with_sku(almacenId, sku)
             diff = len(products) - cantidad
@@ -543,15 +545,10 @@ def send_order_another_group(order_id):
     Chequear si es que podemos moverlo
     para no completar a medias una orden
     '''
-    despacho = get_almacen_info("despacho")
-    if despacho.usedSpace + amount <= despacho.totalSpace:
-        productos_movidos = send_to_somewhere(sku, int(amount), almacenes["despacho"])
-        # enviamos luego al grupo externo
-        for product in productos_movidos:
-            move_product_to_another_group(product["_id"], order_entity.client)
-        # si se envio todo entonces despacho todo entonces seteamos dispatched
-        order_entity.update(state="enviada")
-
-    else:
-        make_space_in_almacen('despacho', 'libre2', amount)
-        send_order_another_group(order_id)
+    make_space_in_almacen('despacho', 'libre2', int(amount))
+    productos_movidos = send_to_somewhere(sku, int(amount), almacenes["despacho"])
+    # enviamos luego al grupo externo
+    for product in productos_movidos:
+        move_product_to_another_group(product["_id"], order_entity.client, order_entity.ocId, order_entity.price)
+    # si se envio todo entonces despacho todo entonces seteamos dispatched
+    updateOC(order_entity.idOc, "terminada")

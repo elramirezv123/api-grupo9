@@ -54,5 +54,5 @@ def declineOc(ocId, reason):
 
 def updateOC(idOc, state):
     order = PurchaseOrder.objects.get(oc_id=idOc)
-    oder.update(state=state)
+    order.update(state=state)
 

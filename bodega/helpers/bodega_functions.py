@@ -61,13 +61,13 @@ def move_product_inter_almacen(productId, almacenId):
     return response.json()
 
 
-def move_product_to_another_group(productId, almacenId):
+def move_product_to_another_group(productId, almacenId, ocId, price):
     # Mueve un producto no vencido desde un almacén de despacho de un grupo
     # a un almacén de recepcion de otro grupo.
     # En caso que almacén de recepción se encuentre lleno, los productos quedan en almacén pulmón.
     hash = hashQuery("POST"+productId+almacenId)
     headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
-    body = {"productoId": productId, "almacenId": almacenId}
+    body = {"productoId": productId, "almacenId": almacenId, "oc": ocId, "precio": price}
     response = requests.post(apiURL + "moveStockBodega",
                              headers=headers, json=body)
 
