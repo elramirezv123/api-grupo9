@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 import json
 import requests
 from bodega.models import File, PurchaseOrder, Ingredient
-from bodega.helpers.oc_functions import getOc, receiveOc
+from bodega.helpers.oc_functions import getOc, receiveOc, producir_10mil
 from bodega.helpers.bodega_functions import *
 from bodega.constants.config import ocURL, almacenes
 from .utils import hashQuery
@@ -62,6 +62,8 @@ def check_not_finished():
                         break
                 oc.finished = True
                 oc.save()
+            else:
+                producir_10mil(oc.sku, oc.amount)
 
 
 def watch_server():

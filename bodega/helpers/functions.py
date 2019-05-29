@@ -55,6 +55,44 @@ def get_inventory():
     return current_stocks, current_sku_stocks
 
 
+
+def producir_10mil(sku, cantidad):
+    if int(sku) < 10000:
+        print("ERROR, SKU ES MENOR A 10 mil")
+    else:
+        try:
+            current_stocks, current_sku_stocks = get_inventory()       
+            inventories = {}
+            ingredients = Ingredient.objects.filter(sku_product=int(sku))
+            check_ingre = {}  #almacena sku_ing: para cuantos batch alcanza
+            for ing in ingredients:
+                # estos ingredientes seran si o si de nivel 100, por lo que no son compuestos
+                ingre_sku = ing.sku_ingredient.sku  #obtenemos el sku del ingrediente
+                stock_we_have = current_sku_stocks.get(ingre_sku, 0)
+                # volume in store almacena la cantidad de ese ingrediente por producto
+                # GUARDO PARA CUANTOS BATCH del producto ME ALCANZAN ESE INGREDIENTE
+                check_ingre[ingre_sku] = int(stock_we_have)
+            
+            # una vez chequeo todos, obtengo la maxima cantidad de bach que podre producir
+            max_cant_producible = min(check_ingre.values())     
+            #TODOS PRODUCEN LOS DE NIVEL 10 MIL, ENTONCES MANDO A PRODUCIR
+            if max_cant_producible > 0:
+                make_space_in_almacen("cocina", "libre2", max_cant_producible)
+                send_to_somewhere(sku, max_cant_producible, almacenes["cocina"]) 
+                make_a_product(sku, max_cant_producible)
+            if max_cant_producible < cantidad:
+                for ingree in check_ingre:
+                    if check_ingre[ingree] == max_cant_producible:
+                        print("NOS QUEDAMOS SIN INGREDIENTE {0} PARA PRODUCIR EL PRODUCTO {1}".format(ingree,sku))
+                        break
+                #pedimos a externo 
+                is_ok, pending = request_sku_extern(sku, cantidad, inventories)  #inventories queda poblado
+                if pending > 0:
+                    print("NO LOGRAMOS PEDIR A EXTERNOS LO QUE NOS FALTO. CORTOS EN {0} BATCHES".format(pending))
+        except Exception as ex:
+            print("ERROR PRODUCIR_10mil: ", ex)
+
+
 def thread_check_10000():
     current_stocks, current_sku_stocks = get_inventory()
     minimum_stock_list = list(minimum_stock_10000.keys())  #en batches
