@@ -41,6 +41,7 @@ def check_not_finished():
         stock_almacen, stock = get_inventory()
         almacen_skus = { almacen: list(obj.keys()) for almacen, obj in stock_almacen.items()}
         for oc in not_finished_ocs:
+            print(oc.sku)
             try:
                 stock = int(stock[oc.sku])
             except:

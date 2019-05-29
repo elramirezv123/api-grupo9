@@ -80,10 +80,10 @@ def orders(request):
             'despachado': True
         }
 
-            return JsonResponse(request_response, safe=False, status=201)
-        else:
-            declineOc(req_oc, 'Bad body format')
-            return JsonResponse({'error': 'Bad body format'}, safe=False, status=400)
+        return JsonResponse(request_response, safe=False, status=201)
+    else:
+        declineOc(req_oc, 'Bad body format')
+        return JsonResponse({'error': 'Bad body format'}, safe=False, status=400)
 
     return JsonResponse({'error': {'type': 'Method not implemented'}}, safe=False, status=501)
 
