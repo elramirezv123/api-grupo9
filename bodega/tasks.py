@@ -16,5 +16,5 @@ def wrapper3(*args, **kwargs):
     watch_server()
 
 @shared_task(name='check_not_finished')
-def wrapper3(*args, **kwargs):
+def wrapper4(*args, **kwargs):
     check_not_finished()
