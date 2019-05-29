@@ -70,8 +70,8 @@ def watch_server():
     no revisados, crea sus correspondientes OC como no finalizadas.
     """
     HOST_NAME = 'fierro.ing.puc.cl'
-    USER_NAME = 'grupo9_dev'
-    USER_PASSWORD = 'kqkgKVqbGBtkbQt'
+    USER_NAME = 'grupo9'
+    USER_PASSWORD = 'GMChbrR2Y6mFzacu5'
     HOST_PORT = 22
     conn_opts = pysftp.CnOpts()
     conn_opts.hostkeys = None
