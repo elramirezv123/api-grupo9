@@ -85,15 +85,14 @@ def orders(request):
         else:
             declineOc(req_oc, 'Bad body format')
             return JsonResponse({'error': 'Bad body format'}, safe=False, status=400)
-    
+
     return JsonResponse({'error': {'type': 'Method not implemented'}}, safe=False, status=501)
 
 
 def test(request):
     # watch_server()
     # thread_check()
-    # check_not_finished()
-    # res = make_space_in_almacen('recepcion', 'libre1', 50, [1110, 1001, 1013, 1002, 1009])
+    check_not_finished()
     # current_stocks, current_sku_stocks = get_inventory()
     # request_for_ingredient('1106', 10, current_sku_stocks, {})
     return JsonResponse({'test': 'working'}, safe=False, status=200)
