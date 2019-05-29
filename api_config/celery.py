@@ -41,10 +41,12 @@ app.conf.beat_schedule = {
         'schedule': 1200.0,   # set the period of running
                             # set the args
     }
+
+
 }
 
 app.autodiscover_tasks()
 
 @app.task(bind=True)
 def debug_task(self):
-    print('Request: {0!r}'.format(self.request)) 
+    print('Request: {0!r}'.format(self.request))

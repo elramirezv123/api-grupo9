@@ -93,14 +93,16 @@ def watch_server():
                             oc_id = node.text
                             raw_response = getOc(oc_id)
                             if raw_response:
-                                response = receiveOc(oc_id)
                                 response = raw_response[0]
-                                file_entity= File.objects.create(filename=attr.filename,
-                                                        processed=True,
-                                                        attended=False)
                                 deadline = response["fechaEntrega"].replace("T", " ").replace("Z","")
-                                new_oc = PurchaseOrder.objects.create(oc_id=response["_id"], sku=response['sku'], client=response['cliente'], provider=response['proveedor'],
+                                recieve_response = receiveOc(oc_id)
+                                if 'error' not in recieve_response.keys():
+                                    file_entity= File.objects.create(filename=attr.filename,
+                                                            processed=True,
+                                                            attended=False)
+                                    new_oc = PurchaseOrder.objects.create(oc_id=response["_id"], sku=response['sku'], client=response['cliente'], provider=response['proveedor'],
                                                                     amount=response['cantidad'], price=response["precioUnitario"], channel=response['canal'], deadline=deadline, finished=False)
-                                file_entity.save()
-                                new_oc.save()
-                                
+                                    file_entity.save()
+                                    new_oc.save()
+                                else:
+                                    print('Error: {}'.format(recieve_response['error']))
