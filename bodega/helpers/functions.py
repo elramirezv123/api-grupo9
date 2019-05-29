@@ -256,7 +256,7 @@ def request_for_ingredient(sku, pending, current_sku_stocks, inventories):
             cant = 0
             for ped in pedidos:
                 c = getOc(ped.oc_id)["estado"]
-                    if(c.upper() != "TERMINADA"):
+                if(c.upper() != "TERMINADA"):
                     now = datetime.datetime.now().replace(tzinfo=pytz.UTC)
                     deadline = ped.deadline.replace(tzinfo=pytz.UTC)
                     if deadline > now:

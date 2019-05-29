@@ -92,7 +92,7 @@ def test(request):
     watch_server()
     # response = get_skus_with_stock(almacenes["pulmon"])
     # print(response)
-    # thread_check()
+    thread_check()
     # check_not_finished()
     # current_stocks, current_sku_stocks = get_inventory()
     # request_for_ingredient('1106', 10, current_sku_stocks, {})
