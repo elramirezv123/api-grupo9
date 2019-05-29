@@ -548,9 +548,9 @@ def send_order_another_group(order_id):
         productos_movidos = send_to_somewhere(sku, int(amount), almacenes["despacho"])
         # enviamos luego al grupo externo
         for product in productos_movidos:
-            move_product_to_another_group(product["_id"], order_entity.client)
+            move_product_to_another_group(product["_id"], order_entity.client, order_entity.ocId, order_entity.price)
         # si se envio todo entonces despacho todo entonces seteamos dispatched
-        order_entity.update(state="enviada")
+        updateOC(order_entity.idOc, "terminada")
 
     else:
         make_space_in_almacen('despacho', 'libre2', amount)
