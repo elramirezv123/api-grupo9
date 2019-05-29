@@ -29,7 +29,9 @@ def newOc(clientId, vendorId, sku, delivery_date, quantity, unitPrice, channel, 
         "notas": "Yupi",
         "urlNotificacion": notURL
     }
+    print(body)
     response = requests.put(ocURL + "crear", headers=headers, json=body)
+    print(response)
     return response.json()
 
 
@@ -39,6 +41,7 @@ def getOc(ocId):
 
 
 def receiveOc(ocId):
+    print("entro a receive")
     body = {"id": ocId}
     response = requests.post(
         ocURL + "recepcionar/{}".format(ocId), headers=headers, json=body)
