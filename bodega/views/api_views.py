@@ -89,7 +89,7 @@ def orders(request):
 
 
 def test(request):
-    # watch_server()
+    watch_server()
     # create_base_products()
     # get_base_products()
     # response = get_skus_with_stock(almacenes["pulmon"])

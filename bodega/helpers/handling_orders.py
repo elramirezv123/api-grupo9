@@ -80,6 +80,7 @@ def watch_server():
         sftp.cwd('/pedidos')
         dir_structure = sftp.listdir_attr()
         for attr in dir_structure:
+            print(attr)
             with sftp.open(attr.filename) as archivo:
                 file_entity = File.objects.filter(filename=attr.filename)
                 must_process = False
@@ -89,14 +90,17 @@ def watch_server():
                 root = tree.getroot()
                 if must_process:
                     for node in root:
+                        print(node)
                         if node.tag == 'id':
                             oc_id = node.text
                             raw_response = getOc(oc_id)
                             if raw_response:
                                 response = raw_response[0]
+                                print(response)
                                 deadline = response["fechaEntrega"].replace("T", " ").replace("Z","")
                                 recieve_response = receiveOc(oc_id)
                                 if 'error' not in recieve_response.keys():
+                                    print("Pasando if")
                                     file_entity= File.objects.create(filename=attr.filename,
                                                             processed=True,
                                                             attended=False)
