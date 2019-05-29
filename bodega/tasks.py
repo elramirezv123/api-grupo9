@@ -3,11 +3,11 @@ from celery import shared_task
 from .helpers.functions import thread_check, thread_check_10000, create_base_products, get_base_products
 from .helpers.handling_orders import watch_server, check_not_finished
 
-@shared_task(name='thread-check')
+@shared_task(name='thread_check')
 def wrapper(*args, **kwargs):
     thread_check()
 
-@shared_task(name='thread-check-10000')
+@shared_task(name='thread_check_10000')
 def wrapper2(*args, **kwargs):
     thread_check_10000()
 

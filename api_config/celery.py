@@ -11,33 +11,33 @@ app = Celery('api_config')
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
 app.conf.beat_schedule = {
-    'thread-check-600-seconds': {  #name of the scheduler
-        'task': 'thread-check',  # task name which we have created in tasks.py
+    'thread_check': {  #name of the scheduler
+        'task': 'thread_check',  # task name which we have created in tasks.py
         'schedule': 600.0,   # set the period of running
                             # set the args
     },
 
-    'thread-check-10000-1200-seconds': {  #name of the scheduler
+    'thread_check_10000': {  #name of the scheduler
     'task': 'thread-check-10000',  # task name which we have created in tasks.py
     'schedule': 1200.0,   # set the period of running
                         # set the args
     },
-    'watch-server-900-seconds': {  #name of the scheduler
+    'watch_server': {  #name of the scheduler
     'task': 'watch_server',  # task name which we have created in tasks.py
     'schedule': 900.0,   # set the period of running
                         # set the args
     },
-    'check_not_finished-700-seconds': {  #name of the scheduler
+    'check_not_finished': {  #name of the scheduler
         'task': 'check_not_finished',  # task name which we have created in tasks.py
         'schedule': 700.0,   # set the period of running
                             # set the args
     },
-    'create-base-products': {  #name of the scheduler
+    'create_base_products': {  #name of the scheduler
         'task': 'base_products',  # task name which we have created in tasks.py
         'schedule': 1200.0,   # set the period of running
                             # set the args
     },
-        'get-base-products': {  #name of the scheduler
+        'get_base_products': {  #name of the scheduler
         'task': 'get_base_products',  # task name which we have created in tasks.py
         'schedule': 1200.0,   # set the period of running
                             # set the args
