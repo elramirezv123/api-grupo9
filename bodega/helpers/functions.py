@@ -1,4 +1,4 @@
-from bodega.constants.logic_constants import almacen_stock, headers, minimum_stock, minimum_stock_10000, prom_request, DELTA, sku_products, REQUEST_FACTOR
+from bodega.constants.logic_constants import base_minimum_stock, almacen_stock, headers, minimum_stock, minimum_stock_10000, prom_request, DELTA, sku_products, REQUEST_FACTOR
 from bodega.constants.config import almacenes, id_grupos
 from bodega.models import Product, Ingredient, Request, PurchaseOrder
 from bodega.helpers.bodega_functions import get_skus_with_stock, get_almacenes, get_products_with_sku, send_product
@@ -375,7 +375,7 @@ def send_oc(group_number, product, quantity):
                             headers=headers, json=body)
     return response
 
-def request_sku_extern(sku, quantity, inventories):
+def request_sku_extern(sku, quantity, inventories=[]):
     """
     dado un sku y la cantidad a pedir, va a buscar entre todos los grupos que lo entregan y
     poner ordenes hasta cumplir la cantidad deseada
@@ -519,3 +519,28 @@ def send_order_another_group(order_id):
         move_product_to_another_group(product["_id"], order_entity.client, order_entity.ocId, order_entity.price)
     # si se envio todo entonces despacho todo entonces seteamos dispatched
     updateOC(order_entity.idOc, "terminada")
+
+
+def create_base_products():
+    for sku in sku_products:
+        producto = Product.objects.get(sku=sku)
+        cantidad = 10*producto.batch
+        if cantidad > 300:
+            cantidad = 3*producto.batch
+        response = make_a_product(sku, cantidad)
+        time.sleep(1)
+
+def get_base_products():
+    for sku, cantidad in base_minimum_stock.items():
+        product = Product.objects.get(sku=sku)
+        productors = product.productors.split(",")
+        choice = random.choice([1,2])
+        if choice % 2 == 0:
+            productors.reverse()
+        for group in productors:
+            if group != "9":
+                inventories = {}
+                available = get_sku_stock_extern(group, sku, inventories)
+                if available:
+                    to_order = int(min(product.batch, available))
+                    response = send_oc(group, product, to_order)
