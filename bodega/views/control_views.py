@@ -63,10 +63,11 @@ def preparar(request):
             response = make_a_product(int(sku), cantidad)
             print(response)
             if not response.get("sku", False):
-                print(ingredientes)
+                print([i.sku_ingredient.sku for i in ingredientes])
                 for ingredient in ingredientes:
-                    if str(ingredient.sku_ingredient.sku) != "1001" and str(ingredient.sku_ingredient.sku) != "1003":
-                        send_to_somewhere(str(ingredient.sku_ingredient.sku), int(cantidad/ingredient.volume_in_store+1), almacenes["despacho"])
+                    if str(ingredient.sku_ingredient.sku) != "1003" and str(ingredient.sku_ingredient.sku) != "1004":
+                        cantidad_pedir = int((cantidad / ingredient.production_batch) * int(ingredient.for_batch))
+                        send_to_somewhere(str(ingredient.sku_ingredient.sku), cantidad_pedir, almacenes["despacho"])
                 response = make_a_product(int(sku), cantidad)
                 print(response)
             return HttpResponseRedirect('inventario')

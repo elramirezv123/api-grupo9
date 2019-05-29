@@ -25,6 +25,7 @@ class Ingredient(models.Model):
                                         related_name="sku_ingredient")
 
     production_batch = models.IntegerField()
+    for_batch = models.DecimalField(decimal_places=2, max_digits=6)
     volume_in_store = models.IntegerField()
 
 

@@ -18,7 +18,8 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(auto_created=True,
                                         primary_key=True, serialize=False, verbose_name='ID')),
                 ('production_batch', models.IntegerField()),
-                ('volume_in_store', models.IntegerField()),
+                ('for_batch', models.DecimalField(decimal_places=2, max_digits=6)),
+                ('volume_in_store', models.IntegerField())
             ],
         ),
         migrations.CreateModel(
