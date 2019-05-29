@@ -50,7 +50,7 @@ def orders(request):
     req_body = get_request_body(request)
     req_sku = req_body['sku']
     req_oc = req_body['oc']
-    order = getOc(req_oc)
+    order = getOc(req_oc)[0]
     try:
         req_sku = int(req_sku)
     except:
@@ -65,7 +65,7 @@ def orders(request):
         declineOc(req_oc, "We don't have stock of that sku. Sorry")
         return JsonResponse({'error': "We don't have stock of that sku. Sorry"}, safe=False, status=400)
     if validate_post_body(req_body):
-        new = PurchaseOrder.objects.create(oc_id=order['_id'], sku=order['sku'], client=order['cliente'], provider=order['proveedor'],
+        new = PurchaseOrder.objects.create(oc_id=order['id'], sku=order['sku'], client=order['cliente'], provider=order['proveedor'],
                             amount=order['cantidad'], price=order['precioUnitario'], channel=order['canal'], deadline=order['fechaEntrega'])
         new.save()
 
@@ -89,7 +89,10 @@ def orders(request):
 
 
 def test(request):
-    watch_server()
+    # print(type(getOc("5cee74b0bcf7bb00048df71d")))
+    # c = getOc("5cee74b0bcf7bb00048df71d")
+    # print(c)
+    # watch_server()
     # create_base_products()
     # get_base_products()
     # response = get_skus_with_stock(almacenes["pulmon"])

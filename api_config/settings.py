@@ -82,27 +82,27 @@ WSGI_APPLICATION = 'api_config.wsgi.application'
 
 #HAY QUE HACER EXPORT DE CADA VARIABLE
 
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': "dbg9",
+        'USER': "jose",
+        'PASSWORD': "1234",
+        'HOST': "localhost",
+        'PORT': 5432
+    }
+}
+
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-#         'NAME': "dbg9",
-#         'USER': "ale",
+#         'NAME': "apidb",
+#         'USER': "grupo9",
 #         'PASSWORD': "password",
 #         'HOST': "localhost",
 #         'PORT': 5432
 #     }
 # }
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': "apidb",
-        'USER': "grupo9",
-        'PASSWORD': "password",
-        'HOST': "localhost",
-        'PORT': 5432
-    }
-}
 
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators
