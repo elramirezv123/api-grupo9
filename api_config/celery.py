@@ -17,7 +17,7 @@ app.conf.beat_schedule = {
                             # set the args
     },
 
-    'thread-check-1000-1200-seconds': {  #name of the scheduler
+    'thread-check-10000-1200-seconds': {  #name of the scheduler
     'task': 'thread-check-10000',  # task name which we have created in tasks.py
     'schedule': 1200.0,   # set the period of running
                         # set the args

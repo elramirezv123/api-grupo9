@@ -7,7 +7,7 @@ from .helpers.handling_orders import watch_server
 def wrapper(*args, **kwargs):
     thread_check()
 
-@shared_task(name='thread-check-1000')
+@shared_task(name='thread-check-10000')
 def wrapper2(*args, **kwargs):
     thread_check_10000()
 
