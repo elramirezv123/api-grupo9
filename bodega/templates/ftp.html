@@ -11,6 +11,7 @@
     <th>ID</th>
     <th>SKU</th>
     <th>Cantidad</th>
+    <th>Deadline</th>
   </tr>
   {% for k, v in ocs.items %}
   <tr>
@@ -22,6 +23,9 @@
     </td>
     <td>
       {{ v.amount }}
+    </td>
+    <td>
+      {{ v.deadline }}
     </td>
   </tr>
   {% endfor %}

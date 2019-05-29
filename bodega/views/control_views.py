@@ -12,12 +12,17 @@ class PedidosForm(forms.Form):
     cantidad = forms.CharField(required=True)
 
 
+class EmptyReceptionForm(forms.Form):
+    space = forms.IntegerField(required=True)
+    almacen_destino = forms.CharField(required=True)
+
 def almacenes_info(request):
+    empty_form = EmptyReceptionForm()
     response = get_almacenes()
     for almacen in response:
         id = almacen.get("_id")
         almacen["id"] = id
-    context = {'almacenes': response, 'prod': prod}
+    context = {'almacenes': response, 'prod': prod, 'form': empty_form}
     return render(request, 'almacen.html', context)
 
 def inventory_info(request):
@@ -30,7 +35,7 @@ def ftp_info(request):
     ocs = PurchaseOrder.objects.filter(finished=False, channel='ftp')
     ocs_info = {}
     for oc in ocs:
-        ocs_info[oc.oc_id] = {"sku": oc.sku, "client": oc.client, "provider": oc.provider, "amount": oc.amount}
+        ocs_info[oc.oc_id] = {"sku": oc.sku, "client": oc.client, "provider": oc.provider, "amount": oc.amount, "deadline": oc.deadline}
     return render(request, 'ftp.html', {'ocs': ocs_info})
 
 def pedir(request):
@@ -69,6 +74,21 @@ def vaciar(request):
     # create a form instance and populate it with data from the request:
     make_space_in_almacen("despacho", "libre1", 177)
     return HttpResponseRedirect('inventario')
-            
+
+def empty_reception(request):
+    # if this is a POST request we need to process the form data
+    # create a form instance and populate it with data from the request:
+    if request.method == 'POST':
+        # create a form instance and populate it with data from the request:
+        form = EmptyReceptionForm(request.POST)
+        if form.is_valid():
+            space = form.cleaned_data['space']
+            destino = form.cleaned_data['almacen_destino']
+            try:
+                space = int(space)
+                make_space_in_almacen("recepcion", destino, space)
+            except:
+                pass
+    return HttpResponseRedirect('almacenes')
 
 # Leave the rest of the views (detail, results, vote) unchanged

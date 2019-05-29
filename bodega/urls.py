@@ -25,6 +25,7 @@ urlpatterns = [*router.urls,
             path('almacenes', control_views.almacenes_info),
             path('inventario', control_views.inventory_info),
             path('pedir', control_views.pedir),
+            path('empty_reception', control_views.empty_reception),
             path('preparar', control_views.preparar),
             path('vaciar', control_views.vaciar),
             path('ftp', control_views.ftp_info)]
