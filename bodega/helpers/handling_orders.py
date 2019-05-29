@@ -62,7 +62,11 @@ def check_not_finished():
                         break
                 oc.finished = True
                 oc.save()
-
+            else:
+                try:
+                    producir_10mil(oc.sku, oc.amount)
+                except:
+                    pass
 
 def watch_server():
     """

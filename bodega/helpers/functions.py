@@ -55,6 +55,44 @@ def get_inventory():
     return current_stocks, current_sku_stocks
 
 
+
+def producir_10mil(sku, cantidad):
+    if int(sku) < 10000:
+        print("ERROR, SKU ES MENOR A 10 mil")
+    else:
+        try:
+            current_stocks, current_sku_stocks = get_inventory()       
+            inventories = {}
+            ingredients = Ingredient.objects.filter(sku_product=int(sku))
+            check_ingre = {}  #almacena sku_ing: para cuantos batch alcanza
+            for ing in ingredients:
+                # estos ingredientes seran si o si de nivel 100, por lo que no son compuestos
+                ingre_sku = ing.sku_ingredient.sku  #obtenemos el sku del ingrediente
+                stock_we_have = current_sku_stocks.get(ingre_sku, 0)
+                # volume in store almacena la cantidad de ese ingrediente por producto
+                # GUARDO PARA CUANTOS BATCH del producto ME ALCANZAN ESE INGREDIENTE
+                check_ingre[ingre_sku] = int(stock_we_have)
+            
+            # una vez chequeo todos, obtengo la maxima cantidad de bach que podre producir
+            max_cant_producible = min(check_ingre.values())     
+            #TODOS PRODUCEN LOS DE NIVEL 10 MIL, ENTONCES MANDO A PRODUCIR
+            if max_cant_producible > 0:
+                make_space_in_almacen("cocina", "libre2", max_cant_producible)
+                send_to_somewhere(sku, max_cant_producible, almacenes["cocina"]) 
+                make_a_product(sku, max_cant_producible)
+            if max_cant_producible < cantidad:
+                for ingree in check_ingre:
+                    if check_ingre[ingree] == max_cant_producible:
+                        print("NOS QUEDAMOS SIN INGREDIENTE {0} PARA PRODUCIR EL PRODUCTO {1}".format(ingree,sku))
+                        break
+                #pedimos a externo 
+                is_ok, pending = request_sku_extern(sku, cantidad, inventories)  #inventories queda poblado
+                if pending > 0:
+                    print("NO LOGRAMOS PEDIR A EXTERNOS LO QUE NOS FALTO. CORTOS EN {0} BATCHES".format(pending))
+        except Exception as ex:
+            print("ERROR PRODUCIR_10mil: ", ex)
+
+
 def thread_check_10000():
     current_stocks, current_sku_stocks = get_inventory()
     minimum_stock_list = list(minimum_stock_10000.keys())  #en batches
@@ -68,8 +106,8 @@ def thread_check_10000():
                 # si es asi, entonces voy a verificar si ha sido terminada con get oc
                 cant = 0
                 for ped in pedidos:
-                    c = getOc(ped.oc_id)[0]
-                    if(c.state.upper() != "TERMINADA"):
+                    c = getOc(ped.oc_id)[0]['estado']
+                    if(c.upper() != "TERMINADA"):
                         now = datetime.datetime.now().replace(tzinfo=pytz.UTC)
                         deadline = ped.deadline.replace(tzinfo=pytz.UTC)
                         print("NOW: {0}, DEADLINE: {1}".format(now, deadline))
@@ -79,7 +117,7 @@ def thread_check_10000():
                             # YA PASO SU HORA, HAY QUE BORRARLO
                             ped.state = "vencida"
                     else:
-                        ped.state = c.state
+                        ped.state = c
                 cantidad_faltante -= cant
                 inventories = {}
                 is_ok, pending = request_sku_extern(sku, cantidad_faltante, inventories)  #inventories queda poblado
@@ -121,39 +159,39 @@ def thread_check():
     minimum_stock_list = list(minimum_stock.keys())  #en batches
     random.shuffle(minimum_stock_list)
     inventories = {}
-    for sku in minimum_stock_list:        
-            if int(sku) < 10000:
-                product_current_stock = current_sku_stocks.get(sku, 0)
-                if product_current_stock < int(minimum_stock[sku]*3):        
-                    try:
-                        cantidad_faltante = int(minimum_stock[sku]*3) - product_current_stock
-                        pedidos = PurchaseOrder.objects.filter(sku=int(sku), state="creada") | PurchaseOrder.objects.filter(sku=int(sku), state="aceptada")
-                        # si es asi, entonces voy a verificar si ha sido terminada con get oc
-                        cant = 0
-                        for ped in pedidos:
-                            c = getOc(ped.oc_id)[0]
-                            if(c.state.upper() != "TERMINADA"):
-                                now = datetime.datetime.now().replace(tzinfo=pytz.UTC)
-                                deadline = ped.deadline.replace(tzinfo=pytz.UTC)
-                                if deadline > now:
-                                    cant += ped.amount
-                                else:
-                                    # YA PASO SU HORA, HAY QUE BORRARLO
-                                    ped.state = "vencida"
+    for sku in minimum_stock_list:   
+        if int(sku) < 10000:
+            product_current_stock = current_sku_stocks.get(sku, 0)
+            if product_current_stock < int(minimum_stock[sku]*3):        
+                try:
+                    cantidad_faltante = int(minimum_stock[sku]*3) - product_current_stock
+                    pedidos = PurchaseOrder.objects.filter(sku=int(sku), state="creada") | PurchaseOrder.objects.filter(sku=int(sku), state="aceptada")
+                    # si es asi, entonces voy a verificar si ha sido terminada con get oc
+                    cant = 0
+                    for ped in pedidos:
+                        c = getOc(ped.oc_id)[0]['estado']
+                        if(c.upper() != "TERMINADA"):
+                            now = datetime.datetime.now().replace(tzinfo=pytz.UTC)
+                            deadline = ped.deadline.replace(tzinfo=pytz.UTC)
+                            if deadline > now:
+                                cant += ped.amount
                             else:
-                                ped.state = c.state
-                        cantidad_faltante -= cant
-                        is_ok, pending = request_sku_extern(sku, cantidad_faltante, inventories)  #inventories queda poblado
-                        if not is_ok and pending > 0:
-                            # VERIFICAMOS SI TENEMOS SUS INGREDIENTES    
-                            # PENDING ES LA CANTIDAD QUE NO PUDE PEDIR  
-                            try:            
-                                request_for_ingredient(sku, pending, current_sku_stocks, inventories)
-                            except Exception as ex:
-                                print("ERROR request for ingrediente: ", ex)
-                    except Exception as ex:
-                        pending = -2
-                        print("ERROR THREAD_CHECK: ", ex)
+                                # YA PASO SU HORA, HAY QUE BORRARLO
+                                ped.state = "vencida"
+                        else:
+                            ped.state = c
+                    cantidad_faltante -= cant
+                    is_ok, pending = request_sku_extern(sku, cantidad_faltante, inventories)  #inventories queda poblado
+                    if not is_ok and pending > 0:
+                        # VERIFICAMOS SI TENEMOS SUS INGREDIENTES    
+                        # PENDING ES LA CANTIDAD QUE NO PUDE PEDIR  
+                        try:            
+                            request_for_ingredient(sku, pending, current_sku_stocks, inventories)
+                        except Exception as ex:
+                            print("ERROR request for ingrediente: ", ex)
+                except Exception as ex:
+                    pending = -2
+                    print("ERROR THREAD_CHECK: ", ex)
                 
        
                     
@@ -218,8 +256,8 @@ def request_for_ingredient(sku, pending, current_sku_stocks, inventories):
                         # si es asi, entonces voy a verificar si ha sido terminada con get oc
                         cant = 0
                         for ped in pedidos:
-                            c = getOc(ped.oc_id)
-                            if(c.state.upper() != "TERMINADA"):
+                            c = getOc(ped.oc_id)[0]['estado']
+                            if(c.upper() != "TERMINADA"):
                                 now = datetime.datetime.now().replace(tzinfo=pytz.UTC)
                                 deadline = ped.deadline.replace(tzinfo=pytz.UTC)
                                 if deadline > now:
@@ -228,7 +266,7 @@ def request_for_ingredient(sku, pending, current_sku_stocks, inventories):
                                     # YA PASO SU HORA, HAY QUE BORRARLO
                                     ped.state = "vencida"
                             else:
-                                ped.state = c.state                      
+                                ped.state = c                  
                         cantidad_ingrediente_a_pedir = pending - cant
                         if cantidad_ingrediente_a_pedir > 0:
                             is_ok, pending = request_sku_extern(ing_sku, cantidad_ingrediente_a_pedir, inventories)
@@ -255,8 +293,8 @@ def request_for_ingredient(sku, pending, current_sku_stocks, inventories):
             # si es asi, entonces voy a verificar si ha sido terminada con get oc
             cant = 0
             for ped in pedidos:
-                c = getOc(ped.oc_id)
-                if(c.state.upper() != "TERMINADA"):
+                c = getOc(ped.oc_id)[0]['estado']
+                if(c.upper() != "TERMINADA"):
                     now = datetime.datetime.now().replace(tzinfo=pytz.UTC)
                     deadline = ped.deadline.replace(tzinfo=pytz.UTC)
                     if deadline > now:
@@ -265,7 +303,7 @@ def request_for_ingredient(sku, pending, current_sku_stocks, inventories):
                         # YA PASO SU HORA, HAY QUE BORRARLO
                         ped.state = "vencida"
                 else:
-                    ped.state = c.state
+                    ped.state = c
             cantidad_ingrediente_a_pedir = pending - cant  # LO QUE AUN NO SE HA PEDIDO
             is_ok, pending2 = request_sku_extern(sku, cantidad_ingrediente_a_pedir, inventories)
             if pending2:
