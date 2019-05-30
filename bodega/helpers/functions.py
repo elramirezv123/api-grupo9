@@ -513,8 +513,11 @@ def make_space_in_almacen(almacen_name, to_almacen_name, amount_to_free, banned_
     to_almacen_id = almacenes[to_almacen_name]
     products = get_skus_with_stock(almacen_id)
     almacen_sku_dict = { product['_id']: product['total'] for product in products }
+    print("almacen_sku_dict", almacen_sku_dict)
     allowed_skus = list(filter(lambda x: x[0] not in banned_sku, almacen_sku_dict.items()))
+    print("allowed_skus", allowed_skus)
     available_space_to_free = sum(map(lambda x: x[1],allowed_skus), 0)
+    print("available_space", available_space_to_free)
     if available_space_to_free >= amount_to_free:
         remaining = amount_to_free
     else:
@@ -529,6 +532,7 @@ def make_space_in_almacen(almacen_name, to_almacen_name, amount_to_free, banned_
         # print('A mover {} de sku {}'.format(amount_to_move, sku[0]))
         try:
             amount_moved = len(send_to_somewhere(sku[0], amount_to_move, to_almacen_id))
+            print("amount_moved", amount_moved)
         except TypeError:
             # Si es que send_to_somewhere no retorna una lista (i.e. falló)
             return False
@@ -538,25 +542,27 @@ def make_space_in_almacen(almacen_name, to_almacen_name, amount_to_free, banned_
 
 
 
-def send_order_another_group(order_id):
+def send_order_another_group(order_id, almacenId):
     #esta funcion mueve el producto a despacho
     # para luego enviar ese producto al grupo que lo pidio
-    order_entity = PurchaseOrder.objects.filter(oc_id=order_id)
-    order_entity = order_entity.get()
+    print("ORDEN DE COMPRA: ", order_id)
+    order_entity = PurchaseOrder.objects.get(oc_id=order_id)
     sku = order_entity.sku
     amount = order_entity.amount
+    print("ORDEN DE COMPRA 2", order_entity.oc_id)
     # movemos a despacho
     '''
     Chequear si es que podemos moverlo
     para no completar a medias una orden
     '''
-    make_space_in_almacen('despacho', 'libre2', int(amount))
+    make_space_in_almacen('despacho', 'libre2', int(amount), [sku])
     productos_movidos = send_to_somewhere(sku, int(amount), almacenes["despacho"])
     # enviamos luego al grupo externo
     for product in productos_movidos:
-        move_product_to_another_group(product["_id"], order_entity.client, order_entity.ocId, order_entity.price)
+        print("Producto movido", product, "order_id", order_id)
+        move_product_to_another_group(product["_id"], almacenId, order_id, order_entity.price)
     # si se envio todo entonces despacho todo entonces seteamos dispatched
-    updateOC(order_entity.idOc, "terminada")
+    updateOC(order_id, "terminada")
 
 
 def create_base_products():

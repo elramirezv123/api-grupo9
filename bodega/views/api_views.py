@@ -66,7 +66,7 @@ def orders(request):
                             amount=order['cantidad'], price=order['precioUnitario'], channel=order['canal'], deadline=order['fechaEntrega'])
         new.save()
         receiveOc(req_oc)
-        send_order_another_group(new.oc_id)
+        send_order_another_group(new.oc_id, req_body['almacenId'])
         request_response = {
             'sku': order['sku'],
             'cantidad': order['cantidad'],
@@ -85,8 +85,8 @@ def orders(request):
 
 
 def test(request):
-    new = newOc('5cc66e378820160004a4c3bc','5cc66e378820160004a4c3c4',"1216", 120, 10, 10, 'b2b')
-    headers["group"] = "1"
+    new = newOc('5cc66e378820160004a4c3bc','5cc66e378820160004a4c3c4',"1216", 120, 1, 10, 'b2b')
+    headers["group"] = "2"
     body = {
             "sku": "1216",
             "cantidad": "10",
