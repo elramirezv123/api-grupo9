@@ -85,21 +85,23 @@ def orders(request):
 
 
 def test(request):
-    new = newOc('5cc66e378820160004a4c3c2','5cc66e378820160004a4c3c4',"1009", 120, 1, 10, 'b2b')
-    headers["group"] = "7"
-    body = {
-            "sku": "1009",
-            "cantidad": "1",
-            "almacenId": "5cc7b139a823b10004d8e6f1",
-            "oc": new["_id"]
-            }
-    response = requests.post("http://localhost:8000/orders",
-                            headers=headers, json=body)
-    print(response.json())
+    # sku = "1002"
+    # cantidad = 1
+    # new = newOc('5cc66e378820160004a4c3be','5cc66e378820160004a4c3c4',"1003", 120, cantidad, 10, 'b2b')
+    # headers["group"] = "3"
+    # body = {
+    #         "sku": sku,
+    #         "cantidad": str(cantidad),
+    #         "almacenId": "5cc7b139a823b10004d8e6d9",
+    #         "oc": new["_id"]
+    #         }
+    # response = requests.post("http://localhost:8000/orders",
+    #                         headers=headers, json=body)
+    # print(response.json())
     # print(type(getOc("5cee74b0bcf7bb00048df71d")))
     # c = getOc("5cee74b0bcf7bb00048df71d")
     # print(c)
-    # watch_server()
+    watch_server()
     # create_base_products()
     # get_base_products()
     # response = get_skus_with_stock(almacenes["pulmon"])

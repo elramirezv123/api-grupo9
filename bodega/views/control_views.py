@@ -61,12 +61,10 @@ def preparar(request):
             cantidad = int(form.cleaned_data['cantidad'])
             # make_space_in_almacen("despacho", "libre2", 177, [i.sku_ingredient.sku for i in ingredientes])
             response = make_a_product(int(sku), cantidad)
-            print(response)
             if not response.get("sku", False):
-                print([i.sku_ingredient.sku for i in ingredientes])
                 for ingredient in ingredientes:
-                    if str(ingredient.sku_ingredient.sku) != "1003" and str(ingredient.sku_ingredient.sku) != "1004":
-                        cantidad_pedir = int((cantidad / ingredient.production_batch) * int(ingredient.for_batch))
+                    if True:
+                        cantidad_pedir = int((cantidad / ingredient.production_batch) * int(ingredient.for_batch)+1)
                         send_to_somewhere(str(ingredient.sku_ingredient.sku), cantidad_pedir, almacenes["despacho"])
                 response = make_a_product(int(sku), cantidad)
                 print(response)

@@ -482,12 +482,13 @@ def send_to_somewhere(sku, cantidad, to_almacen):
             diff = len(products) - cantidad
             try:
                 if diff >= 0:
-                    producto_movidos += move_products(products[:cantidad], to_almacen)
+                    producto_movidos += move_products(products[:cantidad+1], to_almacen)
                     return producto_movidos
                 else:
                     producto_movidos += move_products(products, to_almacen)
                     cantidad -= len(products)
-            except:
+            except Exception as err:
+                print(err)
                 return producto_movidos
 
 
