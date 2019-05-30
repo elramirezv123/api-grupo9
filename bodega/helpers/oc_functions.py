@@ -41,7 +41,6 @@ def getOc(ocId):
 
 
 def receiveOc(ocId):
-    print("entro a receive")
     body = {"id": ocId}
     response = requests.post(
         ocURL + "recepcionar/{}".format(ocId), headers=headers, json=body)
