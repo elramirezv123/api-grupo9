@@ -1,7 +1,6 @@
 import os
 from celery import Celery
 
-
 #  https://djangopy.org/how-to/handle-asynchronous-tasks-with-celery-and-django
 
 
@@ -11,34 +10,34 @@ app = Celery('api_config')
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
 app.conf.beat_schedule = {
-    'thread_check': {  #name of the scheduler
-        'task': 'thread_check',  # task name which we have created in tasks.py
+    'thread-check': {  #name of the scheduler
+        'task': 'thread-check',  # task name which we have created in tasks.py
         'schedule': 600.0,   # set the period of running
                             # set the args
     },
 
-    'thread_check_10000': {  #name of the scheduler
-    'task': 'thread-check-10000',  # task name which we have created in tasks.py
-    'schedule': 1200.0,   # set the period of running
+    'thread-check-10000': {  #name of the scheduler
+        'task': 'thread-check-10000',  # task name which we have created in tasks.py
+        'schedule': 1200.0,   # set the period of running
                         # set the args
     },
-    'watch_server': {  #name of the scheduler
-    'task': 'watch_server',  # task name which we have created in tasks.py
-    'schedule': 900.0,   # set the period of running
+    'watch-server': {  #name of the scheduler
+        'task': 'watch-server',  # task name which we have created in tasks.py
+        'schedule': 180.0,   # set the period of running
                         # set the args
     },
-    'check_not_finished': {  #name of the scheduler
-        'task': 'check_not_finished',  # task name which we have created in tasks.py
-        'schedule': 700.0,   # set the period of running
+    'check-not-finished': {  #name of the scheduler
+        'task': 'check-not-finished',  # task name which we have created in tasks.py
+        'schedule': 180.0,   # set the period of running
                             # set the args
     },
-    'create_base_products': {  #name of the scheduler
-        'task': 'base_products',  # task name which we have created in tasks.py
+    'create-base-products': {  #name of the scheduler
+        'task': 'base-products',  # task name which we have created in tasks.py
         'schedule': 1200.0,   # set the period of running
                             # set the args
     },
-        'get_base_products': {  #name of the scheduler
-        'task': 'get_base_products',  # task name which we have created in tasks.py
+    'get-base-products': {  #name of the scheduler
+        'task': 'get-base-products',  # task name which we have created in tasks.py
         'schedule': 1200.0,   # set the period of running
                             # set the args
     }

@@ -41,7 +41,8 @@ def getOc(ocId):
 def receiveOc(ocId):
     body = {"id": ocId}
     response = requests.post(
-        ocURL + "recepcionar/{}".format(ocId), headers=headers)
+        ocURL + "recepcionar/{}".format(ocId), headers=headers, json=body)
+    
     return response.json()
 
 
@@ -53,6 +54,6 @@ def declineOc(ocId, reason):
 
 
 def updateOC(idOc, state):
-    order = PurchaseOrder.objects.get(oc_id=idOc)
+    order = PurchaseOrder.objects.filter(oc_id=idOc)
     order.update(state=state)
 

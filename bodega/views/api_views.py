@@ -8,7 +8,7 @@ from bodega.constants.logic_constants import sku_products
 from bodega.models import Product, Ingredient, Request, File, PurchaseOrder
 from bodega.helpers.functions import *
 from bodega.helpers.bodega_functions import get_skus_with_stock
-from bodega.helpers.oc_functions import getOc, declineOc, receiveOc
+from bodega.helpers.oc_functions import getOc, declineOc, receiveOc, newOc
 
 # https://www.webforefront.com/django/accessurlparamstemplates.html
 
@@ -50,15 +50,12 @@ def orders(request):
     req_body = get_request_body(request)
     req_sku = req_body['sku']
     req_oc = req_body['oc']
-    order = getOc(req_oc)
+    order = getOc(req_oc)[0]
     try:
         req_sku = int(req_sku)
     except:
         declineOc(req_oc, "SKU NO SE PUEDE TRANSFORMAR A ENTERO (INT)")
         return JsonResponse({'error': "SKU NO SE PUEDE TRANSFORMAR A ENTERO (INT)"}, safe=False, status=400)
-    if not is_our_product(req_sku):
-        declineOc(req_oc, 'Sku is not produced by us')
-        return JsonResponse({'error': 'Sku is not produced by us'}, safe=False, status=404)
     stock, sku_stock_dict = get_inventory()
     lista = list(map(lambda x: int(x), sku_stock_dict))
     if req_sku not in lista or int(sku_stock_dict[str(req_sku)]) < int(req_body['cantidad']):
@@ -68,9 +65,8 @@ def orders(request):
         new = PurchaseOrder.objects.create(oc_id=order['_id'], sku=order['sku'], client=order['cliente'], provider=order['proveedor'],
                             amount=order['cantidad'], price=order['precioUnitario'], channel=order['canal'], deadline=order['fechaEntrega'])
         new.save()
-
         receiveOc(req_oc)
-        send_order_another_group(new.oc_id)
+        send_order_another_group(new.oc_id, req_body['almacenId'])
         request_response = {
             'sku': order['sku'],
             'cantidad': order['cantidad'],
@@ -89,7 +85,25 @@ def orders(request):
 
 
 def test(request):
+    # sku = "1002"
+    # cantidad = 1
+    # new = newOc('5cc66e378820160004a4c3be','5cc66e378820160004a4c3c4',"1003", 120, cantidad, 10, 'b2b')
+    # headers["group"] = "3"
+    # body = {
+    #         "sku": sku,
+    #         "cantidad": str(cantidad),
+    #         "almacenId": "5cc7b139a823b10004d8e6d9",
+    #         "oc": new["_id"]
+    #         }
+    # response = requests.post("http://localhost:8000/orders",
+    #                         headers=headers, json=body)
+    # print(response.json())
+    # print(type(getOc("5cee74b0bcf7bb00048df71d")))
+    # c = getOc("5cee74b0bcf7bb00048df71d")
+    # print(c)
     watch_server()
+    # create_base_products()
+    # get_base_products()
     # response = get_skus_with_stock(almacenes["pulmon"])
     # print(response)
     thread_check()

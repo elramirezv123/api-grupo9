@@ -38,6 +38,7 @@ def populate_products(apps, schema_editor):
         new_ingredient = Ingredient.objects.create(sku_product=product_instance,
                                                    sku_ingredient=ingredient_instance,
                                                    production_batch=int(line['lote produccion']),
+                                                   for_batch=float(line["cantidad lote"]),
                                                    volume_in_store=int(float(line['bodega'])))
         new_ingredient.save()
                 

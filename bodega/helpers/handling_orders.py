@@ -62,7 +62,11 @@ def check_not_finished():
                         break
                 oc.finished = True
                 oc.save()
-
+            else:
+                try:
+                    producir_10mil(oc.sku, oc.amount)
+                except:
+                    pass
 
 def watch_server():
     """
@@ -80,6 +84,7 @@ def watch_server():
         sftp.cwd('/pedidos')
         dir_structure = sftp.listdir_attr()
         for attr in dir_structure:
+            # print(attr)
             with sftp.open(attr.filename) as archivo:
                 file_entity = File.objects.filter(filename=attr.filename)
                 must_process = False
@@ -89,14 +94,18 @@ def watch_server():
                 root = tree.getroot()
                 if must_process:
                     for node in root:
+                        # print(node)
                         if node.tag == 'id':
                             oc_id = node.text
+                            # print(oc_id)
                             raw_response = getOc(oc_id)
                             if raw_response:
                                 response = raw_response[0]
+                                # print(response)
                                 deadline = response["fechaEntrega"].replace("T", " ").replace("Z","")
                                 recieve_response = receiveOc(oc_id)
-                                if 'error' not in recieve_response.keys():
+                                if 'error' not in recieve_response[0].keys():
+                                    print('pasando if')
                                     file_entity= File.objects.create(filename=attr.filename,
                                                             processed=True,
                                                             attended=False)
