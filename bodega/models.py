@@ -61,3 +61,8 @@ class File(models.Model):
     filename = models.CharField(max_length=255)
     processed = models.BooleanField(default=False)  
     attended = models.BooleanField(default=False)
+
+class Log(models.Model):
+    caller = models.CharField(max_length=255, null=True, default=None)
+    comment = models.CharField(max_length=255, null=True, default=None)
+    created_at = models.DateTimeField(null=True)

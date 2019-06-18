@@ -7,6 +7,7 @@ from bodega.helpers.handling_orders import watch_server, check_not_finished
 from bodega.constants.logic_constants import sku_products
 from bodega.models import Product, Ingredient, Request, File, PurchaseOrder
 from bodega.helpers.functions import *
+from bodega.helpers.utils import logger
 from bodega.helpers.bodega_functions import get_skus_with_stock
 from bodega.helpers.oc_functions import getOc, declineOc, receiveOc, newOc
 
@@ -85,8 +86,9 @@ def orders(request):
 
 
 def test(request):
-    # sku = "1002"
-    # cantidad = 1
+    sku = "1002"
+    cantidad = 1
+    logger('TEST', 'PIDIENDO SKU {} CANTIDAD {}'.format(sku, cantidad))
     # new = newOc('5cc66e378820160004a4c3be','5cc66e378820160004a4c3c4',"1003", 120, cantidad, 10, 'b2b')
     # headers["group"] = "3"
     # body = {
@@ -101,12 +103,12 @@ def test(request):
     # print(type(getOc("5cee74b0bcf7bb00048df71d")))
     # c = getOc("5cee74b0bcf7bb00048df71d")
     # print(c)
-    watch_server()
+    # watch_server()
     # create_base_products()
     # get_base_products()
     # response = get_skus_with_stock(almacenes["pulmon"])
     # print(response)
-    thread_check()
+    # thread_check()
     # check_not_finished()
     # current_stocks, current_sku_stocks = get_inventory()
     # request_for_ingredient('1106', 10, current_sku_stocks, {})
