@@ -3,6 +3,7 @@ import xml.etree.ElementTree as ET
 import json
 import requests
 from bodega.models import File, PurchaseOrder, Ingredient
+from bodega.helpers.utils import logger
 from bodega.helpers.oc_functions import getOc, receiveOc
 from bodega.helpers.bodega_functions import *
 from bodega.constants.config import ocURL, almacenes

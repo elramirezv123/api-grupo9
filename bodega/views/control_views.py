@@ -2,7 +2,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django import template
 from bodega.helpers.functions import get_almacenes, get_inventory, make_a_product, make_space_in_almacen, send_to_somewhere
-from bodega.models import Product, Ingredient, PurchaseOrder
+from bodega.models import Product, Ingredient, PurchaseOrder, Log
 from bodega.constants.config import prod, almacenes
 from django.shortcuts import redirect
 from django import forms
@@ -38,6 +38,13 @@ def ftp_info(request):
         ocs_info[oc.oc_id] = {"sku": oc.sku, "client": oc.client, "provider": oc.provider, "amount": oc.amount, "deadline": oc.deadline}
     return render(request, 'ftp.html', {'ocs': ocs_info})
 
+def show_logs(request):
+    logs = Log.objects.all()
+    for log in logs:
+        print(log.created_at.strftime("%Y/%m/%d, %H:%M:%S"))
+    logs_info = map(lambda x: {"id": x.id, "caller": x.caller, "date": x.created_at.strftime("%Y/%m/%d, %H:%M:%S"), "comment": x.comment}, logs)
+    return render(request, 'logs.html', { "logs": logs_info})
+    
 def pedir(request):
     # if this is a POST request we need to process the form data
     if request.method == 'POST':
