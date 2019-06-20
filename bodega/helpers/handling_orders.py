@@ -11,24 +11,56 @@ from bodega.constants.logic_constants import *
 from bodega.helpers.functions import *
 
 
-# def try_to_produce_highlevel(sku, amount, inventories):
-#     ingredients = Ingredient.objects.filter(sku_product_id=sku)
-#     ing_with_amount_to_produce = {str(ing.sku_ingredient_id): ing.volume_in_store*amount for ing in ingredients}
-#     needed_skus = [ing.sku_ingredient_id for ing in ingredients]
-#     have_enough = True
-#     for sku_info in inventories:
-#         if int(sku_info['sku']) in needed_skus:
-#             if int(sku_info['total']) < ing_with_amount_to_produce[sku_info['sku']]:
-#                 have_enough = False
-#     if have_enough:
-#         kitchen_space_needed = sum([ amount for _, amount in ing_with_amount_to_produce.items()])
-#         # Hacemos el espacio en la cocina
-#         make_space_in_almacen('cocina', "libre1", kitchen_space_needed + 5)
-#         # Movemos los ingredientes a la cocina
-#         for sku, amount in ing_with_amount_to_produce:
-#             send_to_somewhere(sku, amount, almacenes['cocina'])
-#         # Producimos!
-#         make_a_product()
+
+def try_to_produce_highlevel(sku, amount, sku_inventory, almacen_inventory):
+    # Los ingredientes del sku
+    ingredients = Ingredient.objects.filter(sku_product_id=sku)
+    # Un diccionario de la forma {<sku_ingrediente>: <cantidad_necesaria>}
+    ing_with_amount_to_produce = {str(ing.sku_ingredient_id): ing.volume_in_store*amount for ing in ingredients}
+    # Diccionario para chequear si tenemos de todo.
+    # Es de la forma {<sku_ingrediente>: <cantidad_que_falta>}
+    we_need = {sku: amount for sku, amount in ing_with_amount_to_produce.items()}
+
+    needed_skus = [ing.sku_ingredient_id for ing in ingredients]
+
+    #### DEBUG ####
+    # print("Para producir {} de {}".format(sku, amount))
+    # for ing, ing_amount in ing_with_amount_to_produce.items():
+    #     print("Se necesitan {} de {}".format(ing_amount, ing))
+    
+    # Recorremos nuestros stock de cada sku
+
+    for sku, stock in sku_inventory.items():
+
+        # Si es que el sku es requerido
+        if int(sku) in needed_skus:
+
+            # Tenemos este sku en stock. Revisamos si tenemos la cantidad necesaria
+            # print("Tenemos {} de {} y se necesita {}".format(stock, sku, ing_with_amount_to_produce[sku]))
+
+            if stock >= ing_with_amount_to_produce[sku]:
+                we_need[sku] = 0
+            else: 
+                we_need[sku] = we_need[sku] - stock
+    # Revisamos el diccionario a ver si tenemos de todo
+
+    if check_if_need_something(we_need):
+        print("Tenemos de todo!")
+    #     kitchen_space_needed = sum([ amount for _, amount in ing_with_amount_to_produce.items()])
+    #     # Hacemos el espacio en la cocina
+    #     make_space_in_almacen('cocina', "libre1", kitchen_space_needed + 5)
+    #     # Movemos los ingredientes a la cocina
+    #     for sku, amount in ing_with_amount_to_produce:
+    #         send_to_somewhere(sku, amount, almacenes['cocina'])
+    #     # Producimos!
+    #     make_a_product()
+    else:
+        print('No tenemos de todo :(')
+        print("Nos falta: ")
+        for sku, needed_amount in we_need.items():
+            if needed_amount > 0:
+                print("{} de {}".format(needed_amount, sku))
+        
 
 
 def check_not_finished():
@@ -42,10 +74,10 @@ def check_not_finished():
         almacen_skus = { almacen: list(obj.keys()) for almacen, obj in stock_almacen.items()}
         for oc in not_finished_ocs:
             try:
-                stock = int(stock[oc.sku])
+                sku_stock = int(stock[oc.sku])
             except:
                 continue
-            if stock >= oc.amount:
+            if sku_stock >= oc.amount:
                 # print("tenemos!")
                 almacen_name = None
                 for almacen, skus in almacen_skus.items():
@@ -67,6 +99,12 @@ def check_not_finished():
                     producir_10mil(oc.sku, oc.amount)
                 except:
                     pass
+
+def check_if_need_something(needs_dict): 
+    for _, amount in needs_dict.items():
+        if amount != 0: 
+            return False
+    return True
 
 def watch_server():
     """
