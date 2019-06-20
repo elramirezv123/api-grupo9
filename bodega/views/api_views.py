@@ -86,30 +86,6 @@ def orders(request):
 
 
 def test(request):
-    sku = "1002"
-    cantidad = 1
-    logger('TEST', 'PIDIENDO SKU {} CANTIDAD {}'.format(sku, cantidad))
-    # new = newOc('5cc66e378820160004a4c3be','5cc66e378820160004a4c3c4',"1003", 120, cantidad, 10, 'b2b')
-    # headers["group"] = "3"
-    # body = {
-    #         "sku": sku,
-    #         "cantidad": str(cantidad),
-    #         "almacenId": "5cc7b139a823b10004d8e6d9",
-    #         "oc": new["_id"]
-    #         }
-    # response = requests.post("http://localhost:8000/orders",
-    #                         headers=headers, json=body)
-    # print(response.json())
-    # print(type(getOc("5cee74b0bcf7bb00048df71d")))
-    # c = getOc("5cee74b0bcf7bb00048df71d")
-    # print(c)
-    # watch_server()
     # create_base_products()
-    # get_base_products()
-    # response = get_skus_with_stock(almacenes["pulmon"])
-    # print(response)
-    # thread_check()
-    # check_not_finished()
-    # current_stocks, current_sku_stocks = get_inventory()
-    # request_for_ingredient('1106', 10, current_sku_stocks, {})
+    create_middle_products()
     return JsonResponse({'test': 'working'}, safe=False, status=200)

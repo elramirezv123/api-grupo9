@@ -28,6 +28,9 @@ class Ingredient(models.Model):
     for_batch = models.DecimalField(decimal_places=2, max_digits=6)
     volume_in_store = models.IntegerField()
 
+    def __str__(self):
+        return "{}".format(self.sku_ingredient.sku)
+
 
 
 class Request(models.Model):
