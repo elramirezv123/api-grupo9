@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from bodega.constants.config import almacenes
-from bodega.helpers.handling_orders import watch_server, check_not_finished, try_to_produce_highlevel
+from bodega.helpers.handling_orders import watch_server, check_not_finished, try_to_produce_highlevel, try_to_produce_highlvl
 from bodega.constants.logic_constants import sku_products
 from bodega.models import Product, Ingredient, Request, File, PurchaseOrder
 from bodega.helpers.functions import *
@@ -111,5 +111,6 @@ def test(request):
     # current_stocks, current_sku_stocks = get_inventory()
     # request_for_ingredient('1106', 10, current_sku_stocks, {})
     stock_almacen, stock = get_inventory()
-    try_to_produce_highlevel(20004, 1, stock, stock_almacen)
+    try_to_produce_highlvl(20004, 1, stock, stock_almacen)
+    # try_to_produce_highlevel(20004, 1, stock, stock_almacen)
     return JsonResponse({'test': 'working'}, safe=False, status=200)
