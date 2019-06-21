@@ -53,7 +53,6 @@ def try_to_produce_highlvl(sku, amount, sku_inventory, almacen_inventory):
             needed[str(needed_sku)] = needed_amount
     needed_to_request = get_needed_dict(sku, amount, sku_inventory)
     for needed_sku, needed_amount in needed_to_request.items():
-        print('Cada fvez...')
         produce_mid_level(needed_sku, needed_amount, sku_inventory, almacen_inventory)
 
 def make_related_base_skus(skus_dict):
@@ -72,8 +71,12 @@ def produce_mid_level(sku, amount, sku_inventory, almacen_inventory):
             produce_mid_level(remaining_sku, remaining_amount, sku_inventory, almacen_inventory)
     else:
         print('Tenemos de todo para producir {} de el sku {}'.format(amount, sku))
-        response = make_a_product(sku, amount)
-        print(response)
+        for needed_sku, needed_amount in needed_to_request.items():
+            response_move = send_to_somewhere(needed_sku, needed_amount, almacenes["despacho"])
+            print(response_move)
+            
+        # response = make_a_product(sku, amount)
+        # print(response)
 
 def get_needed_dict(sku, amount, sku_inventory):
     # Los ingredientes del sku
