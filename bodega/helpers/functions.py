@@ -268,9 +268,32 @@ def check_space(quantity, almacenName):
 def vaciar_pulmon():
     almacens = get_almacenes()
     print(almacens)
+    # for almacen in almacens:
+    #     if almacen["_id"] == almacenes['pulmon']:
+    #         libre = ['libre1', 'libre2']
+    #         make_space_in_almacen('pulmon', random.choice(libre), min(int(almacen['usedSpace']), 100))
+    #         break
+    libres = {}
+    for almacen in almacens:
+        if almacen["_id"] == almacenes['libre1']:
+            libres['libre1'] = almacen
+        elif almacen["_id"] == almacenes['libre2']:
+            libres['libre2'] = almacen
     for almacen in almacens:
         if almacen["_id"] == almacenes['pulmon']:
-            libre = ['libre1', 'libre2']
-            make_space_in_almacen('pulmon', random.choice(libre), min(int(almacen['usedSpace']), 100))
-            break
-
+            pendiente_vaciar = int(almacen['usedSpace'])
+            print("hay que vaciar {} del pulmon".format(pendiente_vaciar)) 
+            while pendiente_vaciar > 0:
+                for nombre in libres.keys():
+                    print("moviendo a {}".format(nombre))
+                    libre = libres[nombre]
+                    cap_disp_destino = int(libre['totalSpace']) - int(libre['usedSpace'])
+                    while cap_disp_destino > 0 and pendiente_vaciar > 0:
+                        cantidad = min(pendiente_vaciar, cap_disp_destino, 100)
+                        if make_space_in_almacen('pulmon', libre, cantidad):
+                            pendiente_vaciar -= cantidad
+                            cap_disp_destino -= cantidad
+                            if pendiente_vaciar == 0:
+                                print("termine de vaciar el pulmon")
+                            if cap_disp_destino == 0:
+                                print("se acabo la capacidad de {}".format(nombre))
