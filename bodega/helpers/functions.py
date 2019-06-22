@@ -1,6 +1,6 @@
 from bodega.constants.logic_constants import base_minimum_stock, almacen_stock, headers, minimum_stock, prom_request, DELTA, sku_products, REQUEST_FACTOR
 from bodega.constants.config import almacenes, id_grupos
-from bodega.models import Product, Ingredient, Request, PurchaseOrder
+from bodega.models import Product, Ingredient, PurchaseOrder
 from bodega.helpers.bodega_functions import get_skus_with_stock, get_almacenes, get_products_with_sku, send_product
 from bodega.helpers.bodega_functions import make_a_product, move_product_inter_almacen, move_product_to_another_group
 from bodega.helpers.oc_functions import newOc, updateOC, getOc
