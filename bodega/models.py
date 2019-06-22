@@ -32,33 +32,17 @@ class Ingredient(models.Model):
         return "{}".format(self.sku_ingredient.sku)
 
 
-
-class Request(models.Model):
-    store_destination_id = models.CharField(max_length=255)
-    sku_id = models.CharField(max_length=255)
-    amount = models.CharField(max_length=255)
-    group = models.IntegerField(null=True)
-    state = models.CharField(max_length=255, default="processing")
-    accepted = models.BooleanField(default=False)
-    dispatched = models.BooleanField(default=False)
-    deadline = models.DateField(null=True)
-
-    def __str__(self):
-        """A string representation of the model."""
-        return str(self.sku_id) + str(self.amount)
-
-
 class PurchaseOrder(models.Model):
     oc_id = models.CharField(primary_key=True, max_length=255)
     sku = models.IntegerField()
     client = models.CharField(max_length=255)
     provider = models.CharField(max_length=255)
     amount = models.IntegerField()
+    sended = models.IntegerField(default=0)
     price = models.IntegerField()
     state = models.CharField(default="creada", max_length=255)  #creada, aceptada, terminada, vencida
     channel = models.CharField(max_length=255)
     deadline = models.DateTimeField()  #maximo tiempo de espera
-    finished = models.BooleanField(default=True)
 
 class File(models.Model):
     filename = models.CharField(max_length=255)
