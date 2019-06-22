@@ -9,6 +9,7 @@ from bodega.models import Product, Ingredient, Request, File, PurchaseOrder
 from bodega.helpers.functions import *
 from bodega.helpers.bodega_functions import get_skus_with_stock
 from bodega.helpers.oc_functions import getOc, declineOc, receiveOc, newOc
+from bodega.helpers.final_products_functions import try_to_produce_highlevel, try_to_produce_highlvl
 
 # https://www.webforefront.com/django/accessurlparamstemplates.html
 
