@@ -7,6 +7,7 @@ from bodega.helpers.handling_orders import watch_server, check_not_finished, try
 from bodega.constants.logic_constants import sku_products
 from bodega.models import Product, Ingredient, Request, File, PurchaseOrder
 from bodega.helpers.functions import *
+from bodega.helpers.utils import logger
 from bodega.helpers.bodega_functions import get_skus_with_stock
 from bodega.helpers.oc_functions import getOc, declineOc, receiveOc, newOc
 
@@ -110,7 +111,9 @@ def test(request):
     # check_not_finished()
     # current_stocks, current_sku_stocks = get_inventory()
     # request_for_ingredient('1106', 10, current_sku_stocks, {})
-    stock_almacen, stock = get_inventory()
-    try_to_produce_highlvl(20004, 1, stock, stock_almacen)
+    # stock_almacen, stock = get_inventory()
+    # try_to_produce_highlvl(20004, 1, stock, stock_almacen)
     # try_to_produce_highlevel(20004, 1, stock, stock_almacen)
+    # create_base_products()
+    # create_middle_products()
     return JsonResponse({'test': 'working'}, safe=False, status=200)

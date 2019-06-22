@@ -4,6 +4,7 @@ import json
 import requests
 from collections import defaultdict
 from bodega.models import File, PurchaseOrder, Ingredient, Product
+from bodega.helpers.utils import logger
 from bodega.helpers.oc_functions import getOc, receiveOc
 from bodega.helpers.bodega_functions import *
 from bodega.constants.config import ocURL, almacenes
@@ -36,15 +37,53 @@ def try_to_produce_highlevel(sku, amount, sku_inventory, almacen_inventory):
             produce_mid_level(needed_sku, needed_amount, sku_inventory, almacen_inventory)
         # print(response)
 
+def send_to_profe(oc): # Esta funcion debiera ser llamada con esa libreria que programa la ejecucion
+    stock_almacen, stock = get_inventory()
+    for almacen in stock_almacen:
+        if oc.sku in stock_almacen[almacen]: # Vemos si el sushi esta en el almacen
+            products = get_products_with_sku(almacenes[almacen], oc.sku)
+            count = 0
+            ready = False
+            for product in products:
+                send_product(product['_id'], oc.oc_id, 'CualquierDireccion', oc.price)
+                count += 1
+                if count >= oc.amount:
+                    ready = True
+                    break
+            if ready: # Si se completo la order, no revisamos mas almacenes
+                break
+
 
 def check_not_finished():
     """
     Revisa las ocs que no esten finished y las recorre llamando a try_to_produce_highlevel
     para intentar producir los productos de nivel 10k, 20k y 30k.
     """
-    not_finished_ocs = PurchaseOrder.objects.filter(finished=False)
+    not_finished_ocs = PurchaseOrder.objects.filter(finished=False) # Filtramos las ocs que no han sido atendidas aun
     if not_finished_ocs:
-        stock_almacen, stock = get_inventory()
+        _, stock = get_inventory()
+        for oc in not_finished_ocs:
+            ingredients = Ingredient.objects.filter(sku_product=oc.sku) # Obtenemos que ingredientes necesita
+            all_in_stock = True # Partimos asumiendo que tenemos todos los ingredientes en stock
+            space = 0
+            for ing in ingredients:
+                quantity = oc.amount * ing.volume_in_store
+                if stock[str(ing.sku_ingredient)] < quantity: # Si no tenemos lo suficiente mandamos a producir del ingrediente
+                    make_a_product(ing.sku_ingredient, quantity)
+                    all_in_stock = False # Con esto se espera que la proxima vez que reisemos esta oc, ya tengamos este ingrediente en stock
+                else:
+                    space += quantity
+            if all_in_stock: # Si tenemos todos los ingredientes, hacemos espacio en cocina y los enviamos a cocina para producir... Si no, esperamos que en la siguiente ejecucion ya los tengamos todos
+                make_space_in_almacen("cocina", "libre1", space)
+                for ing in ingredients:
+                    send_to_somewhere(ing.sku_ingredient, quantity, almacenes["cocina"])
+                make_a_product(oc.sku, oc.amount) # Se manda a fabricar (Nose si la funcion sera otra al ser desde cocina)
+                send_to_profe(oc) # LLAMADO A LA FUNCION PROGRAMADA PARA X TIEMPO DESPUES ASUMIENDO QUE EN ESE TIEMPO YA SE TIENE EL SUSHI
+                oc.finished = True # La marcamos como finished para que no vuelva a hacer este proceso
+                oc.save()
+
+
+        '''stock_almacen, stock = get_inventory()
         almacen_skus = { almacen: list(obj.keys()) for almacen, obj in stock_almacen.items()}
         for oc in not_finished_ocs:
             try:
@@ -72,7 +111,7 @@ def check_not_finished():
                 try:
                     producir_10mil(oc.sku, oc.amount)
                 except:
-                    pass
+                    pass'''
 
 
 def watch_server():
