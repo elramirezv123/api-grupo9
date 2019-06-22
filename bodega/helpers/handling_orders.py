@@ -83,37 +83,6 @@ def check_not_finished():
                 oc.save()
 
 
-        '''stock_almacen, stock = get_inventory()
-        almacen_skus = { almacen: list(obj.keys()) for almacen, obj in stock_almacen.items()}
-        for oc in not_finished_ocs:
-            try:
-                sku_stock = int(stock[oc.sku])
-            except:
-                continue
-            if sku_stock >= oc.amount:
-                # print("tenemos!")
-                almacen_name = None
-                for almacen, skus in almacen_skus.items():
-                    if str(oc.sku) in skus:
-                        almacen_name = almacen
-                        break
-                products = get_products_with_sku(almacenes[almacen_name], oc.sku)
-                count = 0
-                for product in products:
-                    # print("enviando {}".format(product['_id']))
-                    send_product(product['_id'], oc.oc_id, 'CualquierDireccion', oc.price)
-                    count += 1
-                    if count >= oc.amount:
-                        break
-                oc.finished = True
-                oc.save()
-            else:
-                try:
-                    producir_10mil(oc.sku, oc.amount)
-                except:
-                    pass'''
-
-
 def watch_server():
     """
     Revisa el servidor FTP y actualiza la BD con los archivos nuevos
@@ -149,7 +118,7 @@ def watch_server():
                                 response = raw_response[0]
                                 # print(response)
                                 deadline = response["fechaEntrega"].replace("T", " ").replace("Z","")
-                                recieve_response = receiveOc(oc_id)
+                                # recieve_response = receiveOc(oc_id)
                                 if 'error' not in recieve_response[0].keys():
                                     print('pasando if')
                                     file_entity= File.objects.create(filename=attr.filename,

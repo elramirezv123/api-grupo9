@@ -88,3 +88,8 @@ almacen_stock = {
     "libre2": 1385, 
     "despacho": 177
 }
+
+STATE_CREATED = 'creada'
+STATE_ACCEPTED = 'ACCEPTED'
+STATE_FINISHED = 'FINISHED'
+STATE_EXPIRED = 'EXPIRED'
