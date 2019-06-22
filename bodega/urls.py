@@ -28,4 +28,5 @@ urlpatterns = [*router.urls,
             path('empty_reception', control_views.empty_reception),
             path('preparar', control_views.preparar),
             path('vaciar', control_views.vaciar),
-            path('ftp', control_views.ftp_info)]
+            path('ftp', control_views.ftp_info),
+            path('logs', control_views.show_logs)]

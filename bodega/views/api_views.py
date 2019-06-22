@@ -3,10 +3,11 @@ from datetime import datetime, timedelta
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from bodega.constants.config import almacenes
-from bodega.helpers.handling_orders import watch_server, check_not_finished
+from bodega.helpers.handling_orders import watch_server, check_not_finished, try_to_produce_highlevel, try_to_produce_highlvl
 from bodega.constants.logic_constants import sku_products
 from bodega.models import Product, Ingredient, Request, File, PurchaseOrder
 from bodega.helpers.functions import *
+from bodega.helpers.utils import logger
 from bodega.helpers.bodega_functions import get_skus_with_stock
 from bodega.helpers.oc_functions import getOc, declineOc, receiveOc, newOc
 from bodega.helpers.final_products_functions import try_to_produce_highlevel, try_to_produce_highlvl
@@ -102,13 +103,18 @@ def test(request):
     # print(type(getOc("5cee74b0bcf7bb00048df71d")))
     # c = getOc("5cee74b0bcf7bb00048df71d")
     # print(c)
-    watch_server()
+    # watch_server()
     # create_base_products()
     # get_base_products()
     # response = get_skus_with_stock(almacenes["pulmon"])
     # print(response)
-    thread_check()
+    # thread_check()
     # check_not_finished()
     # current_stocks, current_sku_stocks = get_inventory()
     # request_for_ingredient('1106', 10, current_sku_stocks, {})
+    # stock_almacen, stock = get_inventory()
+    # try_to_produce_highlvl(20004, 1, stock, stock_almacen)
+    # try_to_produce_highlevel(20004, 1, stock, stock_almacen)
+    # create_base_products()
+    # create_middle_products()
     return JsonResponse({'test': 'working'}, safe=False, status=200)
