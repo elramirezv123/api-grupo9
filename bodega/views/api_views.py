@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from bodega.constants.config import almacenes
-from bodega.helpers.handling_orders import watch_server, check_not_finished, try_to_produce_highlevel, try_to_produce_highlvl
+from bodega.helpers.handling_orders import watch_server, check_not_finished
 from bodega.constants.logic_constants import sku_products
 from bodega.models import Product, Ingredient, Request, File, PurchaseOrder
 from bodega.helpers.functions import *
