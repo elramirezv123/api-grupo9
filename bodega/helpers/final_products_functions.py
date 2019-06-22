@@ -2,6 +2,7 @@ import pysftp
 import xml.etree.ElementTree as ET
 import json
 import requests
+import math
 from collections import defaultdict
 from bodega.models import File, PurchaseOrder, Ingredient, Product
 from bodega.helpers.oc_functions import getOc, receiveOc
@@ -51,25 +52,39 @@ def try_to_produce_highlvl(sku, amount, sku_inventory, almacen_inventory):
                 needed[str(needed_sku)] = needed_amount - sku_inventory[str(needed_sku)]
         else:
             needed[str(needed_sku)] = needed_amount
-    make_related_base_skus(base_products_dict)
-    # needed_to_request = get_needed_dict(sku, amount, sku_inventory)
-    # for needed_sku, needed_amount in needed_to_request.items():
-    #     produce_mid_level(needed_sku, needed_amount, sku_inventory, almacen_inventory)
+    # make_related_base_skus(base_products_dict)
+    needed_to_request = get_needed_dict(sku, amount, sku_inventory)
+    print(needed_to_request)
+    for needed_sku, needed_amount in needed_to_request.items():
+        print("Intentando producir {} de {}".format(needed_amount, needed_sku))
+        produce_mid_level(needed_sku, needed_amount, sku_inventory, almacen_inventory)
 
 def produce_mid_level(sku, amount, sku_inventory, almacen_inventory):
-    if not has_ingredients(sku):
+    if not has_ingredients(sku) or str(sku) == "1209":
         # Acá no deberían entrar skus base.
         return
     needed_to_request = get_needed_dict(sku, amount, sku_inventory)
+    print(needed_to_request)
+    recipe_dict = get_needed_recipe_dict(sku, amount)
     remaining = check_if_doesnt_have_all(needed_to_request)
     if remaining:
         for remaining_sku, remaining_amount in remaining.items():
             produce_mid_level(remaining_sku, remaining_amount, sku_inventory, almacen_inventory)
     else:
         print('Tenemos de todo para producir {} de el sku {}'.format(amount, sku))
-        for needed_sku, needed_amount in needed_to_request.items():
-            response_move = send_to_somewhere(needed_sku, needed_amount, almacenes["despacho"])
-            print(response_move)
+        # for needed_sku, needed_amount in recipe_dict.items():
+        #     amount_in_despacho = 0 if str(needed_sku) not in almacen_inventory['despacho'].keys() else 0
+        #     if amount_in_despacho >= needed_amount:
+        #         print('Tenemos en despacho :)')
+        #         response_make = make_a_product(sku, amount)
+        #         print(response_make)
+        #     else: 
+        #         rest = needed_amount - amount_in_despacho
+        #         print("To despacho: {} de {}, para producir {} de {}".format(rest, needed_sku, sku, amount))
+        #         response_move = send_to_somewhere(needed_sku, rest, almacenes["despacho"])
+        #         print(response_move)
+        #         response_make = make_a_product(sku, amount)
+        #         print(response_make)
             
         # response = make_a_product(sku, amount)
         # print(response)
@@ -103,15 +118,30 @@ def get_needed_dict(sku, amount, sku_inventory):
                 we_need[sku] = 0
             else: 
                 we_need[sku] = we_need[sku] - stock
-    request_dict = {}
 
     # Esta parte es para considerar los tamaños de los batches.
-
+    request_dict = {}
     for needed_sku, needed_amount in we_need.items():
         total_to_make = get_batch_amount_to_produce(needed_sku, needed_amount)
         request_dict[needed_sku] = total_to_make
-
     return request_dict
+
+def get_needed_recipe_dict(sku, amount):
+    """
+    Devuelve un diccionario con los skus y cantidades necesarios para producir el sku que recibe como parámetro
+    OJO: Son los ingredientes directos, a diferencia de sku_base_products que devuelve sólo productos bases
+    ##### NO CONSIDERA INVENTARIO, ES SÓLO LA RECETA #####
+    {<product_sku>: <cantidad_necesaria_a_producir>}
+    """
+    print('Quiero hacer {} de {}'.format(amount, sku))
+    ingredients = Ingredient.objects.filter(sku_product_id=sku)
+    for ing in ingredients:
+        print("SKU: {} VIS: {}, PB: {}".format(ing.sku_ingredient_id, ing.volume_in_store, ing.production_batch))
+        res = math.ceil((amount/ing.production_batch)*ing.volume_in_store)
+    ing_with_amount_to_produce = {str(ing.sku_ingredient_id): math.ceil((amount/ing.production_batch)*ing.volume_in_store) for ing in ingredients}
+    print('So, la receta para eso es: ')
+    print(ing_with_amount_to_produce)
+    return ing_with_amount_to_produce
 
 
 def sku_base_products(sku, amount):
@@ -132,7 +162,6 @@ def sku_base_products(sku, amount):
             else:
                 to_return[ing_sku.sku_ingredient_id] += total_to_make
     return to_return
-
 
 def has_ingredients(sku):
     """
