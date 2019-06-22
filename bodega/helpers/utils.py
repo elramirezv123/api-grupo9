@@ -27,7 +27,7 @@ def hashQuery(query):
 
 
 def toMiliseconds(minutes):
-    start = (datetime.datetime.now() - datetime.datetime(1970,1,1)).total_seconds()
+    start = (datetime.datetime.now().replace(tzinfo=pytz.UTC) - datetime.datetime(1970,1,1).replace(tzinfo=pytz.UTC)).total_seconds()
     return int((start + minutes*60)*1000)
 
 def logger(caller_name, comment):

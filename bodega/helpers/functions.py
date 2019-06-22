@@ -111,26 +111,30 @@ def move_products(products, almacenId):
     for product in products:
         producto_movidos.append(product)
         response = move_product_inter_almacen(product["_id"], almacenId)
-        print(response)
     return producto_movidos
 
 def send_to_somewhere(sku, cantidad, to_almacen):
     # Mueve el producto y la cantidad que se quiera hacia el almacen que se quiera (solo de nosotros)
     producto_movidos = []
+    print("cantidad que quiero mover", cantidad)
     for almacen, almacenId in almacenes.items():
+        print("Estoy parado en ", almacen)
         if almacen != "despacho" and almacenId != to_almacen:
             products = get_products_with_sku(almacenId, sku)
-            diff = len(products) - cantidad
-            try:
-                if diff >= 0:
-                    producto_movidos += move_products(products[:cantidad+1], to_almacen)
+            if len(products) > 0:
+                diff = len(products) - cantidad
+                try:
+                    if diff >= 0:
+                        print("Voy a mover", len(products[:cantidad]))
+                        producto_movidos += move_products(products[:cantidad], to_almacen)
+                        return producto_movidos
+                    else:
+                        print("No puedo mover todo, asique voy a mover ", len(products))
+                        producto_movidos += move_products(products, to_almacen)
+                        cantidad -= len(products)
+                except Exception as err:
+                    print(err)
                     return producto_movidos
-                else:
-                    producto_movidos += move_products(products, to_almacen)
-                    cantidad -= len(products)
-            except Exception as err:
-                print(err)
-                return producto_movidos
 
 
 def make_space_in_almacen(almacen_name, to_almacen_name, amount_to_free, banned_sku=[]):
@@ -202,9 +206,7 @@ def send_order_another_group(order_id, almacenId):
 def create_base_products():
     for sku in sku_products:
         producto = Product.objects.get(sku=sku)
-        cantidad = 10*producto.batch
-        if cantidad > 300:
-            cantidad = 3*producto.batch
+        cantidad = producto.batch
         response = make_a_product(sku, cantidad)
         print(response)
         time.sleep(1)
@@ -214,6 +216,7 @@ def create_middle_products():
     _, inventario = get_inventory()
     print(_)
     for sku in minimum_stock:
+        # if sku == 1110:
         if inventario.get(str(sku), 0) < 30:
             print("entro")
             ingredientes = Ingredient.objects.filter(sku_product=int(sku))
@@ -230,6 +233,8 @@ def create_middle_products():
                         send_to_somewhere(str(ingredient.sku_ingredient.sku), cantidad_pedir, almacenes["despacho"])
                 response = make_a_product(int(sku), cantidad)
                 print(response)
+            else:
+                print("No tengo todo para producir {}".format(sku))
 
 
 def get_base_products():
@@ -245,3 +250,27 @@ def get_base_products():
                 if available:
                     to_order = int(min(product.batch, available))
                     response = send_oc(group, product, to_order)
+
+
+
+def check_space(quantity, almacenName):
+    almacens = get_almacenes()
+    for almacen in almacens:
+        if almacen["_id"] == almacenes[almacenName]:
+            if quantity > (almacen['totalSpace'] - almacen['usedSpace']):
+                return False
+            else:
+                return True
+
+
+
+
+def vaciar_pulmon():
+    almacens = get_almacenes()
+    print(almacens)
+    for almacen in almacens:
+        if almacen["_id"] == almacenes['pulmon']:
+            libre = ['libre1', 'libre2']
+            make_space_in_almacen('pulmon', random.choice(libre), min(int(almacen['usedSpace']), 100))
+            break
+
