@@ -12,31 +12,6 @@ from .utils import hashQuery
 from bodega.constants.logic_constants import *
 from bodega.helpers.functions import *
 
-
-######### VERSIÓN 1 
-def try_to_produce_highlevel(sku, amount, sku_inventory, almacen_inventory):
-    # we_need es un diccionario de la forma:
-    # {<sku_ingrediente>: <cantidad_a_enviar_a_producir>} 
-    needed_to_request = get_needed_dict(sku, amount, sku_inventory)
-    print(needed_to_request)
-
-    if not check_if_doesnt_have_all(needed_to_request):
-        print("Tenemos de todo!")
-    #     kitchen_space_needed = sum([ amount for _, amount in ing_with_amount_to_produce.items()])
-    #     # Hacemos el espacio en la cocina
-    #     make_space_in_almacen('cocina', "libre1", kitchen_space_needed + 5)
-    #     # Movemos los ingredientes a la cocina
-    #     for sku, amount in ing_with_amount_to_produce:
-    #         send_to_somewhere(sku, amount, almacenes['cocina'])
-    #     # Producimos!
-    #     make_a_product()
-    else:
-        print('No tenemos de todo :(')
-        # response = make_a_product(sku, total_to_make)
-        for needed_sku, needed_amount in needed_to_request.items():
-            produce_mid_level(needed_sku, needed_amount, sku_inventory, almacen_inventory)
-        # print(response)
-
 def send_to_profe(oc): # Esta funcion debiera ser llamada con esa libreria que programa la ejecucion
     stock_almacen, stock = get_inventory()
     for almacen in stock_almacen:
@@ -54,12 +29,12 @@ def send_to_profe(oc): # Esta funcion debiera ser llamada con esa libreria que p
                 break
 
 
-def check_not_finished():
+def check_not_iniciated():
     """
     Revisa las ocs que no esten finished y las recorre llamando a try_to_produce_highlevel
     para intentar producir los productos de nivel 10k, 20k y 30k.
     """
-    not_finished_ocs = PurchaseOrder.objects.filter(finished=False) # Filtramos las ocs que no han sido atendidas aun
+    not_finished_ocs = PurchaseOrder.objects.filter(state='creada') # Filtramos las ocs que no han sido atendidas aun
     if not_finished_ocs:
         _, stock = get_inventory()
         for oc in not_finished_ocs:
@@ -116,19 +91,16 @@ def watch_server():
                             raw_response = getOc(oc_id)
                             if raw_response:
                                 response = raw_response[0]
-                                # print(response)
                                 deadline = response["fechaEntrega"].replace("T", " ").replace("Z","")
-                                # recieve_response = receiveOc(oc_id)
-                                if 'error' not in recieve_response[0].keys():
-                                    print('pasando if')
-                                    file_entity= File.objects.create(filename=attr.filename,
-                                                            processed=True,
-                                                            attended=False)
-                                    new_oc = PurchaseOrder.objects.create(oc_id=response["_id"], sku=response['sku'], client=response['cliente'], provider=response['proveedor'],
-                                                                    amount=response['cantidad'], price=response["precioUnitario"], channel=response['canal'], deadline=deadline, finished=False)
-                                    file_entity.save()
-                                    new_oc.save()
-                                else:
-                                    print('Error: {}'.format(recieve_response['error']))
+                                print('pasando if')
+                                file_entity= File.objects.create(filename=attr.filename,
+                                                        processed=True,
+                                                        attended=False)
+                                new_oc = PurchaseOrder.objects.create(oc_id=response["_id"], sku=response['sku'], 
+                                                                      client=response['cliente'], provider=response['proveedor'],
+                                                                      amount=response['cantidad'], price=response["precioUnitario"],
+                                                                      channel=response['canal'], deadline=deadline)
+                                file_entity.save()
+                                new_oc.save()
 
     

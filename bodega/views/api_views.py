@@ -3,11 +3,11 @@ from datetime import datetime, timedelta
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from bodega.constants.config import almacenes
-from bodega.helpers.handling_orders import watch_server, check_not_finished
+from bodega.helpers.handling_orders import watch_server
 from bodega.constants.logic_constants import sku_products
 from bodega.models import Product, Ingredient, File, PurchaseOrder
 from bodega.helpers.functions import *
-from bodega.helpers.utils import logger
+from bodega.helpers.utils import logger, validate_post_body
 from bodega.helpers.bodega_functions import get_skus_with_stock
 from bodega.helpers.oc_functions import getOc, declineOc, receiveOc, newOc
 from bodega.helpers.final_products_functions import try_to_produce_highlevel, try_to_produce_highlvl
@@ -104,7 +104,7 @@ def test(request):
     # c = getOc("5cee74b0bcf7bb00048df71d")
     # print(c)
     # watch_server()
-    # create_base_products()
+    create_base_products()
     # get_base_products()
     # response = get_skus_with_stock(almacenes["pulmon"])
     # print(response)

@@ -36,3 +36,8 @@ def logger(caller_name, comment):
                                      comment=comment,
                                      created_at=now)
     log_entity.save()
+
+
+def validate_post_body(body):
+    valid_keys = ['almacenId', 'sku', 'cantidad', 'oc']
+    return set(body.keys()) == set(valid_keys)
