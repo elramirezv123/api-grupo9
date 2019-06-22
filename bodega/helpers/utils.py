@@ -4,6 +4,8 @@ import hashlib
 import urllib
 import datetime
 from bodega.constants.config import apiKey
+from bodega.models import Log
+import pytz
 
 '''
 Este módulo es para las funciones que son transversalmente útiles para
@@ -28,3 +30,9 @@ def toMiliseconds(minutes):
     start = (datetime.datetime.now() - datetime.datetime(1970,1,1)).total_seconds()
     return int((start + minutes*60)*1000)
 
+def logger(caller_name, comment):
+    now = datetime.datetime.now().replace(tzinfo=pytz.UTC)
+    log_entity= Log.objects.create(caller=caller_name,
+                                     comment=comment,
+                                     created_at=now)
+    log_entity.save()

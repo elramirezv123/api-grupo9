@@ -1,17 +1,11 @@
-from bodega.constants.logic_constants import almacen_stock, headers, minimum_stock, minimum_stock_10000, prom_request, DELTA, sku_products, REQUEST_FACTOR
+from bodega.constants.logic_constants import base_minimum_stock, almacen_stock, headers, minimum_stock, prom_request, DELTA, sku_products, REQUEST_FACTOR
 from bodega.constants.config import almacenes, id_grupos
 from bodega.models import Product, Ingredient, Request, PurchaseOrder
 from bodega.helpers.bodega_functions import get_skus_with_stock, get_almacenes, get_products_with_sku, send_product
 from bodega.helpers.bodega_functions import make_a_product, move_product_inter_almacen, move_product_to_another_group
 from bodega.helpers.oc_functions import newOc, updateOC, getOc
 from bodega.helpers.utils import toMiliseconds
-import requests
-import json
-import os
-import time
-import random
-import datetime
-import pytz
+import requests, json, os, time, random, datetime, pytz, math
 
 PRODUCTS_JSON_PATH = os.path.abspath(os.path.join(
     os.path.dirname(__file__), '..', '..', 'productos.json'))
@@ -53,254 +47,6 @@ def get_inventory():
             current_sku_stocks[stock['_id']] = stock['total'] + current_sku_stocks.get(stock["_id"], 0)
         current_stocks[almacen] = dict_sku
     return current_stocks, current_sku_stocks
-
-
-def thread_check_10000():
-    current_stocks, current_sku_stocks = get_inventory()
-    print("VERIFICANDO LOS 10 mil")
-    print("current stock: ", current_sku_stocks)
-    minimum_stock_list = list(minimum_stock_10000.keys())  #en batches
-    random.shuffle(minimum_stock_list)
-    for sku in minimum_stock_list:
-        try:
-            print("SKU a preguntar: ", sku)
-            product_current_stock = current_sku_stocks.get(sku, 0)
-            print("CURRENT STOCK DE: {0} es {1}".format(sku, product_current_stock))
-            if product_current_stock < int(minimum_stock_10000[sku]):        
-                cantidad_faltante = int(minimum_stock_10000[sku]) - product_current_stock
-                pedidos = PurchaseOrder.objects.filter(sku=int(sku), state="creada") | PurchaseOrder.objects.filter(sku=int(sku), state="aceptada")
-                # si es asi, entonces voy a verificar si ha sido terminada con get oc
-                cant = 0
-                for ped in pedidos:
-                    c = getOc(ped.oc_id)[0]
-                    if(c.state.upper() != "TERMINADA"):
-                        now = datetime.datetime.now().replace(tzinfo=pytz.UTC)
-                        deadline = ped.deadline.replace(tzinfo=pytz.UTC)
-                        print("NOW: {0}, DEADLINE: {1}".format(now, deadline))
-                        if deadline > now:
-                            cant += ped.amount
-                        else:
-                            # YA PASO SU HORA, HAY QUE BORRARLO
-                            ped.state = "vencida"
-                    else:
-                        ped.state = c.state
-                cantidad_faltante -= cant
-                print("CANTIDAD A LA ESPERA DE LLEGADA: ", cant)
-                print("CANTIDAD A PEDIR: ", cantidad_faltante)
-                inventories = {}
-                is_ok, pending = request_sku_extern(sku, cantidad_faltante, inventories)  #inventories queda poblado
-                print("LA ORDEN FUE RESPONDIDA CON: ", is_ok)
-                print("QUEDA PENDIENTE: ", pending)
-                if pending > 0:
-                    ingredients = Ingredient.objects.filter(sku_product=int(sku))
-                    check_ingre = {}  #almacena sku_ing: para cuantos batch alcanza
-                    for ing in ingredients:
-                        # estos ingredientes seran si o si de nivel 100, por lo que no son compuestos
-                        print("VERIFICANDO INGREDIENTE {0} PARA EL PRODUCTO {1}".format(ing.sku_ingredient.sku, ing.sku_product.sku))
-                        ingre_sku = ing.sku_ingredient.sku  #obtenemos el sku del ingrediente
-                        stock_we_have = current_sku_stocks.get(ingre_sku, 0)
-                        print("STOCK QUE TENEMOS: ", stock_we_have)
-                        # volume in store almacena la cantidad de ese ingrediente por producto
-                        # GUARDO PARA CUANTOS BATCH del producto ME ALCANZAN ESE INGREDIENTE
-                        check_ingre[ingre_sku] = int(stock_we_have)
-                    
-                    # una vez chequeo todos, obtengo la maxima cantidad de bach que podre producir
-                    max_cant_producible = min(check_ingre.values())     
-                    print("MAXIMA CANTIDAD PRODUCIBLE: ", max_cant_producible) 
-                    #TODOS PRODUCEN LOS DE NIVEL 10 MIL, ENTONCES MANDO A PRODUCIR
-                    if max_cant_producible > 0:
-                        make_space_in_almacen("cocina", "libre2", max_cant_producible)
-                        send_to_somewhere(sku, max_cant_producible, almacenes["cocina"]) 
-                        make_a_product(sku, max_cant_producible)
-
-                    if max_cant_producible < pending:
-                        for ingree in check_ingre:
-                            if check_ingre[ingree] == max_cant_producible:
-                                print("NOS QUEDAMOS SIN INGREDIENTE {0} PARA PRODUCIR EL PRODUCTO {1}".format(ingree,sku))
-                                break
-        except Exception as ex:
-            print("ERROR THREAD_CHECK_10000: ", ex)
-
-
-
-def thread_check():
-    '''
-    current_stocks: {'almacenId': [{sku: <cantidad>}]} (cantidad por almacen)
-    current_sku_stocks: {sku: <cantidad>} (cantidad total por sku)
-    '''
-    current_stocks, current_sku_stocks = get_inventory()
-    minimum_stock_list = list(minimum_stock.keys())  #en batches
-    random.shuffle(minimum_stock_list)
-    inventories = {}
-    for sku in minimum_stock_list:        
-            if int(sku) < 10000:
-                print("SKU a preguntar: ", sku)
-                product_current_stock = current_sku_stocks.get(sku, 0)
-                if product_current_stock < int(minimum_stock[sku]*3):        
-                    try:
-                        cantidad_faltante = int(minimum_stock[sku]*3) - product_current_stock
-                        pedidos = PurchaseOrder.objects.filter(sku=int(sku), state="creada") | PurchaseOrder.objects.filter(sku=int(sku), state="aceptada")
-                        # si es asi, entonces voy a verificar si ha sido terminada con get oc
-                        cant = 0
-                        for ped in pedidos:
-                            c = getOc(ped.oc_id)[0]
-                            if(c.state.upper() != "TERMINADA"):
-                                now = datetime.datetime.now().replace(tzinfo=pytz.UTC)
-                                deadline = ped.deadline.replace(tzinfo=pytz.UTC)
-                                if deadline > now:
-                                    cant += ped.amount
-                                else:
-                                    # YA PASO SU HORA, HAY QUE BORRARLO
-                                    ped.state = "vencida"
-                            else:
-                                ped.state = c.state
-                        cantidad_faltante -= cant
-                        print("CANTIDAD A LA ESPERA DE LLEGADA: ", cant)
-                        print("CANTIDAD A PEDIR: ", cantidad_faltante)
-                        is_ok, pending = request_sku_extern(sku, cantidad_faltante, inventories)  #inventories queda poblado
-                        print("LA ORDEN FUE RESPONDIDA CON: ", is_ok)
-                        print("QUEDA PENDIENTE: ", pending)
-                        if not is_ok and pending > 0:
-                            # VERIFICAMOS SI TENEMOS SUS INGREDIENTES    
-                            # PENDING ES LA CANTIDAD QUE NO PUDE PEDIR  
-                            try:            
-                                request_for_ingredient(sku, pending, current_sku_stocks, inventories)
-                            except Exception as ex:
-                                print("ERROR request for ingrediente: ", ex)
-                    except Exception as ex:
-                        pending = -2
-                        print("ERROR THREAD_CHECK: ", ex)
-                
-       
-                    
-
-def request_for_ingredient(sku, pending, current_sku_stocks, inventories):
-    # OBTENEMOS LOS INGREDIENTES E ITERAMOS SOBRE ELLOS
-    # VERIFICAMOS SU STOCK PARA FABRICAR LA CANTIDAD A PEDIR
-    # EL sku_product SERA DE NIVEL 1000 o 100
-    ingredients = Ingredient.objects.filter(sku_product=int(sku))
-    check_ingre = {}  #almacena sku_ing: para cuantos batch alcanza
-    print("---------------------------Ingredientes: ", [item.sku_ingredient.sku for item in ingredients])
-    if len(ingredients) > 0: # es de nivel 1000
-        # Si esque necesita ingredientes, verificamos si tenemos 
-        # cantidad para todos los ingredientes
-        for ing in ingredients:
-            # estos ingredientes seran si o si de nivel 100, por lo que no son compuestos
-            ingre_sku = ing.sku_ingredient.sku  #obtenemos el sku del ingrediente
-            stock_we_have = current_sku_stocks.get(ingre_sku, 0)
-            # volume in store almacena la cantidad de ese ingrediente por producto
-            # GUARDO PARA CUANTOS BATCH del producto ME ALCANZAN ESE INGREDIENTE
-            check_ingre[ingre_sku] = int(stock_we_have / ing.volume_in_store)
-        
-        # una vez chequeo todos, obtengo la maxima cantidad de bach que podre producir
-        max_cant_producible = min(check_ingre.values())        
-        # verifico si alcanza
-        # mando a  producir el minimo entre max_cant y pending
-        cant_a_producir = min(pending, max_cant_producible)
-        # MANDO A PRODUCIR LA cantidad_a_producir
-        # UN BATCH A LA VEZ PARA NO LLENAR DESPACHO
-        # ASUMO QUE DESPACHO ESTA VACIO        
-        copy_new_pending = cant_a_producir #en batch
-        while copy_new_pending > 0:
-            make_space_in_almacen("despacho", "libre2", 120, [i.sku_ingredient.sku for i in ingredients])
-            for ing in ingredients:
-                ing_sku = ing.sku_ingredient.sku               
-                # MOVEMOS A DESPACHO LO NECESARIO PARA UN BATCH
-                send_to_somewhere(ing_sku, ing.volume_in_store, almacenes["despacho"])   
-            # UNA VEZ TODOS EN DESPACHO, MANDO A PRODUCIR
-            produ = Product.objects.filter(sku=int(sku))
-            make_a_product(sku, produ.batch)
-            copy_new_pending -= 1  
-        if cant_a_producir < pending:
-            new_pending = pending - max_cant_producible
-            # NO ALCANZA
-            for ing_sku in check_ingre:
-                # ACTUALIZO
-                check_ingre[ing_sku] -= max_cant_producible  #saco los ingredientes que se usaron
-                # AHORA REVISO POR INGREDIENTE SI ME ALCANZA PARA EL RESTO DE LOS BATCH          
-                if check_ingre[ing_sku] < new_pending:
-                    # NO ME ALCANZA EL INGREDIENTE PARA PRODUCIR LO QUE NECESITO
-                    # VERIFICAMOS SI YO LO PRODUZCO
-                    if ing_sku in sku_products:
-                        make_space_in_almacen("despacho", "libre2", check_ingre[ing_sku])
-                        send_to_somewhere(ing_sku, check_ingre[ing_sku], almacenes["despacho"])
-                        # SI LO PRODUZCO
-                        # MANDO A PRODUCIR TOD LO QUE NECESITO YA QUE ES DE NIVEL 100
-                        make_a_product(ing_sku, check_ingre[ing_sku])
-                    else:
-                        print("EL INGREDIENTE {0} NO ES NUESTRO".format(ing_sku))
-                        # NO ES NUESTRO
-                        # ENTONCES DEBEMOS PEDIR LO QUE NOS FALTA PARA COMPLETAR
-                        # VERIFICAMOS SI YA LO PEDIMOS, HACIENDO LA SUMA DE LOS PEDIDOS
-                        pedidos = PurchaseOrder.objects.filter(sku=int(sku), state="creada") | PurchaseOrder.objects.filter(sku=int(sku), state="aceptada")
-                        # si es asi, entonces voy a verificar si ha sido terminada con get oc
-                        cant = 0
-                        for ped in pedidos:
-                            c = getOc(ped.oc_id)
-                            if(c.state.upper() != "TERMINADA"):
-                                now = datetime.datetime.now().replace(tzinfo=pytz.UTC)
-                                deadline = ped.deadline.replace(tzinfo=pytz.UTC)
-                                print("NOW: {0}, DEADLINE: {1}".format(now, deadline))
-                                if deadline > now:
-                                    cant += ped.amount
-                                else:
-                                    # YA PASO SU HORA, HAY QUE BORRARLO
-                                    ped.state = "vencida"
-                            else:
-                                ped.state = c.state
-                        print("PASO PEDIDOS")                        
-                        cantidad_ingrediente_a_pedir = pending - cant
-                        if cantidad_ingrediente_a_pedir > 0:
-                            is_ok, pending = request_sku_extern(ing_sku, cantidad_ingrediente_a_pedir, inventories)
-                            
-                            if pending:
-                                print("QUEDO PENDIENTE {0} DEL INGREDIENTE {1}".format(pending, ing_sku))
-                                # SOLO QUEDA LLORAR
-                                # AUNQUE QUIZAS SE PODRIA REINTENTAR EN UNOS MINUTOS MAS
-                                pass
-            
-    else: # es de nivel 100
-        # CHEQUEAMOS CUANTO NOS FALTA 
-        # VEMOS SI LO PRODUCIMOS
-        if sku in sku_products: 
-            # ES NUESTRO
-            # MANDO A PRODUCIR todo LO QUE NECESITO YA QUE ES DE NIVEL 100
-            make_space_in_almacen("despacho", "libre2", pending)
-            send_to_somewhere(sku, pending, almacenes["despacho"])
-            make_a_product(sku, pending)
-        else:
-            # NO ES NUESTRO
-            # ENTONCES DEBEMOS PEDIR LO QUE NOS FALTA PARA COMPLETAR
-            # VERIFICAMOS SI YA LO PEDIMOS, HACIENDO LA SUMA DE LOS PEDIDOS
-            pedidos = PurchaseOrder.objects.filter(sku=int(sku), state="creada") | PurchaseOrder.objects.filter(sku=int(sku), state="aceptada")
-            # si es asi, entonces voy a verificar si ha sido terminada con get oc
-            cant = 0
-            for ped in pedidos:
-                c = getOc(ped.oc_id)
-                if(c.state.upper() != "TERMINADA"):
-                    now = datetime.datetime.now().replace(tzinfo=pytz.UTC)
-                    deadline = ped.deadline.replace(tzinfo=pytz.UTC)
-                    print("NOW: {0}, DEADLINE: {1}".format(now, deadline))
-                    if deadline > now:
-                        cant += ped.amount
-                    else:
-                        # YA PASO SU HORA, HAY QUE BORRARLO
-                        ped.state = "vencida"
-                else:
-                    ped.state = c.state
-            cantidad_ingrediente_a_pedir = pending - cant  # LO QUE AUN NO SE HA PEDIDO
-            is_ok, pending2 = request_sku_extern(sku, cantidad_ingrediente_a_pedir, inventories)
-            if pending2:
-                # SOLO QUEDA LLORAR
-                # AUNQUE QUIZAS SE PODRIA REINTENTAR EN UNOS MINUTOS MAS
-                pass
-
-
-# Fabricar diferencia mas algo
-# una funciona para la cantidad puede ser un promedio de la cantidad para cada producto pedido
-# entonces cada vez que me piden una cantidad, la entrego y luego pido la cantidad promedio de ese producto
-# asi podriamos mantener un stock confiable que no salga mucho del rango
-# y establecemos un minimo de peticion como por ejemplo 10
 
 
 def get_stock_sku(sku, stock):
@@ -360,9 +106,7 @@ def get_sku_stock_extern(group_number, sku, inventories):
         try:
             response = requests.get("http://tuerca{}.ing.puc.cl/inventories".format(group_number))
             response = json.loads(response.text)
-            print(response)
             inventories[group_number] = response
-            print("Sku que estoy preguntando: ", sku)
             #print("Response1:", response, type(response))
             if len(response) > 0:
                 for product in response:
@@ -380,8 +124,7 @@ def get_sku_stock_extern(group_number, sku, inventories):
 
 
 def send_oc(group_number, product, quantity):
-    new_order = newOc(id_grupos['9'], id_grupos[group_number], product.sku, product.production_time, quantity, product.price, "b2b")
-    print("Pude hacer nueva orden: ", new_order)
+    new_order = newOc(id_grupos['9'], id_grupos[group_number], product.sku, 1440, quantity, product.price, "b2b")
     deadline = new_order["fechaEntrega"].replace("T", " ").replace("Z","")
     new = PurchaseOrder.objects.create(oc_id=new_order["_id"], sku=product.sku, client=id_grupos["9"], provider=id_grupos[group_number],
                             amount=quantity, price=new_order["precioUnitario"], channel="b2b", deadline=deadline)
@@ -398,10 +141,9 @@ def send_oc(group_number, product, quantity):
             }
     response = requests.post("http://tuerca{}.ing.puc.cl/orders".format(group_number),
                             headers=headers, json=body)
-    print("Termino el response")
     return response
 
-def request_sku_extern(sku, quantity, inventories):
+def request_sku_extern(sku, quantity, inventories=[]):
     """
     dado un sku y la cantidad a pedir, va a buscar entre todos los grupos que lo entregan y
     poner ordenes hasta cumplir la cantidad deseada
@@ -413,22 +155,16 @@ def request_sku_extern(sku, quantity, inventories):
     choice = random.choice([1,2])
     if choice % 2 == 0:
         productors.reverse()
-    print("productores: ", productors)
     for group in productors:
-        print("Preguntando a grupo", group)
         if group != "9":
             available = get_sku_stock_extern(group, sku, inventories)
-            print("available: ", available)
             if available:
                 to_order = int(min(pending, available))
-                print("EL GRUPO {0} TIENE {1} DE {2} y NECESITAMOS {3}. PEDIREMOS {4}".format(group, available, sku, pending, to_order))
                 response = send_oc(group, product, to_order)
                 try:
-                    print("Response.text:", response.text)
                     response = json.loads(response.text)
                     #print("Response2:", response)
                     if response["aceptado"]:
-                        print("Me lo aceptaron yupi")
                         pending -= float(response["cantidad"])
                         '''
                         Se imprime que lo aceptaron sólo si no hay exception
@@ -454,7 +190,7 @@ def get_inventories(view=False):
     if not view:
         return [{"sku": sku, "total": cantidad, "nombre": Product.objects.get(sku=sku).name} for sku,cantidad in _.items()]
     else:
-        return [{"sku": sku, "total": int(cantidad*0.5), "nombre": Product.objects.get(sku=sku).name} for sku,cantidad in _.items()]
+        return [{"sku": sku, "total": int(cantidad*0.6), "nombre": Product.objects.get(sku=sku).name} for sku,cantidad in _.items()]
 
 
 
@@ -471,18 +207,18 @@ def send_to_somewhere(sku, cantidad, to_almacen):
     # Mueve el producto y la cantidad que se quiera hacia el almacen que se quiera (solo de nosotros)
     producto_movidos = []
     for almacen, almacenId in almacenes.items():
-        print(almacen)
         if almacen != "despacho" and almacenId != to_almacen:
             products = get_products_with_sku(almacenId, sku)
             diff = len(products) - cantidad
             try:
                 if diff >= 0:
-                    producto_movidos += move_products(products[:cantidad], to_almacen)
+                    producto_movidos += move_products(products[:cantidad+1], to_almacen)
                     return producto_movidos
                 else:
                     producto_movidos += move_products(products, to_almacen)
                     cantidad -= len(products)
-            except:
+            except Exception as err:
+                print(err)
                 return producto_movidos
 
 
@@ -533,11 +269,10 @@ def make_space_in_almacen(almacen_name, to_almacen_name, amount_to_free, banned_
 
 
 
-def send_order_another_group(order_id):
+def send_order_another_group(order_id, almacenId):
     #esta funcion mueve el producto a despacho
     # para luego enviar ese producto al grupo que lo pidio
-    order_entity = PurchaseOrder.objects.filter(oc_id=int(order_id))
-    order_entity = order_entity.get()
+    order_entity = PurchaseOrder.objects.get(oc_id=order_id)
     sku = order_entity.sku
     amount = order_entity.amount
     # movemos a despacho
@@ -545,15 +280,56 @@ def send_order_another_group(order_id):
     Chequear si es que podemos moverlo
     para no completar a medias una orden
     '''
-    despacho = get_almacen_info("despacho")
-    if despacho.usedSpace + amount <= despacho.totalSpace:
-        productos_movidos = send_to_somewhere(sku, int(amount), almacenes["despacho"])
-        # enviamos luego al grupo externo
-        for product in productos_movidos:
-            move_product_to_another_group(product["_id"], order_entity.client)
-        # si se envio todo entonces despacho todo entonces seteamos dispatched
-        order_entity.update(state="enviada")
+    make_space_in_almacen('despacho', random.choice(['libre2', 'libre1']), int(amount), [sku])
+    productos_movidos = send_to_somewhere(sku, int(amount), almacenes["despacho"])
+    productos_despacho = get_products_with_sku(almacenes["despacho"], sku)
+    for producto in productos_despacho:
+        move_product_to_another_group(producto["_id"], almacenId, order_id, order_entity.price)
+    updateOC(order_id, "terminada")
 
-    else:
-        make_space_in_almacen('despacho', 'libre2', amount)
-        send_order_another_group(order_id)
+
+def create_base_products():
+    for sku in sku_products:
+        producto = Product.objects.get(sku=sku)
+        cantidad = 10*producto.batch
+        if cantidad > 300:
+            cantidad = 3*producto.batch
+        response = make_a_product(sku, cantidad)
+        time.sleep(1)
+
+
+def create_middle_products():
+    _, inventario = get_inventory()
+    print(_)
+    for sku in minimum_stock:
+        if inventario.get(str(sku), 0) < 30:
+            print("entro")
+            ingredientes = Ingredient.objects.filter(sku_product=int(sku))
+            print("Ingredientes", ingredientes)
+            lista_a_pedir = [True if inventario.get(str(ingre.sku_ingredient.sku), False) else False for ingre in ingredientes]
+            if False not in lista_a_pedir:
+                cantidad = ingredientes[0].sku_product.batch
+                for ingredient in ingredientes:
+                    cantidad_pedir = math.ceil(cantidad / ingredient.production_batch) * ingredient.volume_in_store
+                    in_despacho = _["despacho"].get(str(ingredient.sku_ingredient.sku), 0)
+                    print("En despacho", in_despacho, "Cantidad a pedir", cantidad_pedir)
+                    cantidad_pedir = cantidad_pedir - in_despacho
+                    if cantidad_pedir > 0:
+                        send_to_somewhere(str(ingredient.sku_ingredient.sku), cantidad_pedir, almacenes["despacho"])
+                response = make_a_product(int(sku), cantidad)
+                print(response)
+
+def get_base_products():
+    for sku, cantidad in base_minimum_stock.items():
+        product = Product.objects.get(sku=sku)
+        productors = product.productors.split(",")
+        choice = random.choice([1,2])
+        if choice % 2 == 0:
+            productors.reverse()
+        for group in productors:
+            if group != "9":
+                inventories = {}
+                available = get_sku_stock_extern(group, sku, inventories)
+                if available:
+                    to_order = int(min(product.batch, available))
+                    response = send_oc(group, product, to_order)

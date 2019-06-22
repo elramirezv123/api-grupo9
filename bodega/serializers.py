@@ -8,10 +8,10 @@ class IngredientSerializer(serializers.ModelSerializer):
     sku_ingredient = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())
     class Meta:
         model = Ingredient
-        fields = ("sku_product", "sku_ingredient", "production_batch", "volume_in_store")
+        fields = ("sku_product", "sku_ingredient", "production_batch", "volume_in_store", "for_batch")
 
 
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
-        fields = ("sku", "name", "price", "productors", "ingredientes")
+        fields = ("sku", "name", "price", "batch", "productors", "ingredientes")

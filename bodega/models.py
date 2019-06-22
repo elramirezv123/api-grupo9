@@ -25,7 +25,11 @@ class Ingredient(models.Model):
                                         related_name="sku_ingredient")
 
     production_batch = models.IntegerField()
+    for_batch = models.DecimalField(decimal_places=2, max_digits=6)
     volume_in_store = models.IntegerField()
+
+    def __str__(self):
+        return "{}".format(self.sku_ingredient.sku)
 
 
 
@@ -60,3 +64,8 @@ class File(models.Model):
     filename = models.CharField(max_length=255)
     processed = models.BooleanField(default=False)  
     attended = models.BooleanField(default=False)
+
+class Log(models.Model):
+    caller = models.CharField(max_length=255, null=True, default=None)
+    comment = models.CharField(max_length=255, null=True, default=None)
+    created_at = models.DateTimeField(null=True)

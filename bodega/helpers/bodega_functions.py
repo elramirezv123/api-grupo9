@@ -17,7 +17,7 @@ def get_skus_with_stock(almacenId):
 def get_products_with_sku(almacenId, sku):
     # Esta función permite obtener los primeros 100 productos (default) no vencidos
     # de algún almacén con algun sku.
-    hash = hashQuery("GET"+almacenId+sku)
+    hash = hashQuery("GET"+almacenId+str(sku))
     headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
     response = requests.get(
         apiURL + "stock?almacenId={}&sku={}".format(almacenId, sku), headers=headers)
@@ -34,7 +34,7 @@ def get_almacenes():
 def send_product(productId, oc, address, price):
     # Despacha un producto no vencido presenta en la bodega de
     # despacho a la dirección indicada.
-    hash = hashQuery("DELETE"+productId+address+price+oc)
+    hash = hashQuery("DELETE"+productId+address+str(price)+oc)
     headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
     body = {"productoId": productId, "oc": oc,
             "direccion": address, "precio": int(price)}
@@ -51,13 +51,13 @@ def move_product_inter_almacen(productId, almacenId):
     return response.json()
 
 
-def move_product_to_another_group(productId, almacenId):
+def move_product_to_another_group(productId, almacenId, ocId, price):
     # Mueve un producto no vencido desde un almacén de despacho de un grupo
     # a un almacén de recepcion de otro grupo.
     # En caso que almacén de recepción se encuentre lleno, los productos quedan en almacén pulmón.
     hash = hashQuery("POST"+productId+almacenId)
     headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
-    body = {"productoId": productId, "almacenId": almacenId}
+    body = {"productoId": productId, "almacenId": almacenId, "oc": ocId, "precio": price}
     response = requests.post(apiURL + "moveStockBodega",
                              headers=headers, json=body)
 

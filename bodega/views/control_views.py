@@ -2,7 +2,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django import template
 from bodega.helpers.functions import get_almacenes, get_inventory, make_a_product, make_space_in_almacen, send_to_somewhere
-from bodega.models import Product, Ingredient, PurchaseOrder
+from bodega.models import Product, Ingredient, PurchaseOrder, Log
 from bodega.constants.config import prod, almacenes
 from django.shortcuts import redirect
 from django import forms
@@ -38,6 +38,13 @@ def ftp_info(request):
         ocs_info[oc.oc_id] = {"sku": oc.sku, "client": oc.client, "provider": oc.provider, "amount": oc.amount, "deadline": oc.deadline}
     return render(request, 'ftp.html', {'ocs': ocs_info})
 
+def show_logs(request):
+    logs = Log.objects.all()
+    for log in logs:
+        print(log.created_at.strftime("%Y/%m/%d, %H:%M:%S"))
+    logs_info = map(lambda x: {"id": x.id, "caller": x.caller, "date": x.created_at.strftime("%Y/%m/%d, %H:%M:%S"), "comment": x.comment}, logs)
+    return render(request, 'logs.html', { "logs": logs_info})
+    
 def pedir(request):
     # if this is a POST request we need to process the form data
     if request.method == 'POST':
@@ -61,12 +68,11 @@ def preparar(request):
             cantidad = int(form.cleaned_data['cantidad'])
             # make_space_in_almacen("despacho", "libre2", 177, [i.sku_ingredient.sku for i in ingredientes])
             response = make_a_product(int(sku), cantidad)
-            print(response)
             if not response.get("sku", False):
-                print(ingredientes)
                 for ingredient in ingredientes:
-                    if str(ingredient.sku_ingredient.sku) != "1001" and str(ingredient.sku_ingredient.sku) != "1003":
-                        send_to_somewhere(str(ingredient.sku_ingredient.sku), int(cantidad/ingredient.volume_in_store+1), almacenes["despacho"])
+                    if True:
+                        cantidad_pedir = int((cantidad / ingredient.production_batch) * int(ingredient.for_batch)+1)
+                        send_to_somewhere(str(ingredient.sku_ingredient.sku), cantidad_pedir, almacenes["despacho"])
                 response = make_a_product(int(sku), cantidad)
                 print(response)
             return HttpResponseRedirect('inventario')
