@@ -1,0 +1,32 @@
+<style>
+    table,
+    th,
+    td {
+        border: 1px solid black;
+    }
+</style>
+<h1>Logs aplicación</h1>
+<table>
+    <tr>
+        <th>ID</th>
+        <th>Caller</th>
+        <th>Comment</th>
+        <th>created_at</th>
+    </tr>
+    {% for log in logs %}
+    <tr>
+        <td>
+            {{ log.id }}
+        </td>
+        <td>
+            {{ log.caller }}
+        </td>
+        <td>
+            {{ log.comment }}
+        </td>
+        <td>
+            {{ log.date }}
+        </td>
+    </tr>
+    {% endfor %}
+</table>

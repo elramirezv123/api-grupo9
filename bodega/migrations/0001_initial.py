@@ -64,6 +64,16 @@ class Migration(migrations.Migration):
                 ('attended', models.BooleanField(default=False)),
             ],
         ),
+        migrations.CreateModel(
+            name='Log',
+            fields=[
+                ('id', models.AutoField(auto_created=True,
+                                        primary_key=True, serialize=False, verbose_name='ID')),
+                ('caller', models.CharField(max_length=255, null=True, default=None)),
+                ('comment', models.CharField(max_length=255, null=True, default=None)),
+                ('created_at', models.DateTimeField(null=True)),
+            ],
+        ),
         migrations.AddField(
             model_name='ingredient',
             name='sku_ingredient',
