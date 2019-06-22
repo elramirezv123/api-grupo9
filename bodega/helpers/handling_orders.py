@@ -149,7 +149,7 @@ def watch_server():
                                 response = raw_response[0]
                                 # print(response)
                                 deadline = response["fechaEntrega"].replace("T", " ").replace("Z","")
-                                recieve_response = receiveOc(oc_id)
+                                # recieve_response = receiveOc(oc_id)
                                 if 'error' not in recieve_response[0].keys():
                                     print('pasando if')
                                     file_entity= File.objects.create(filename=attr.filename,
