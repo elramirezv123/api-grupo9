@@ -4,7 +4,7 @@ from django.utils import timezone
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from bodega.constants.config import almacenes
-from bodega.helpers.handling_orders import watch_server, check_not_iniciated, check_not_finished
+from bodega.helpers.handling_orders import watch_server, check_not_initiated, check_not_finished
 from bodega.constants.logic_constants import sku_products
 from bodega.models import Product, Ingredient, File, PurchaseOrder
 from bodega.helpers.functions import *
@@ -107,7 +107,7 @@ def test(request):
     # print(type(getOc("5cee74b0bcf7bb00048df71d")))
     # c = getOc("5cee74b0bcf7bb00048df71d")
     # print(c)
-    # watch_server()
+    watch_server()
     # create_base_products()
     # get_base_products()
     # response = get_skus_with_stock(almacenes["pulmon"])
@@ -128,6 +128,6 @@ def test(request):
     #                                 channel='ftp', deadline=(timezone.now() + timedelta(hours=1)))
     
     # check_not_iniciated()
-    check_not_finished()
+    # check_not_finished()
 
     return JsonResponse({'test': 'working'}, safe=False, status=200)
