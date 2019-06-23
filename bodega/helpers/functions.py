@@ -10,22 +10,6 @@ import requests, json, os, time, random, datetime, pytz, math
 PRODUCTS_JSON_PATH = os.path.abspath(os.path.join(
     os.path.dirname(__file__), '..', '..', 'productos.json'))
 
-def get_almacen_info(almacenName):
-    response = get_almacenes()
-    for almacen in response:
-        if almacen[almacenName]:
-            return almacen
-
-
-def check_almacen(required_sku, required_amount, almacen_name):
-    skus_in_almacen = get_skus_with_stock(almacenes[almacen_name])
-    for available_sku in skus_in_almacen:
-        sku, total = available_sku['_id'], available_sku['total']
-        if (sku == str(required_sku)):
-            return total >= required_amount
-    return False
-
-
 def get_request_body(request):
     body_unicode = request.body.decode('utf-8')
     return json.loads(body_unicode)
@@ -59,68 +43,34 @@ def get_stock_sku(sku, stock):
             continue
     return suma
 
-
-
-def cantidad_a_pedir(sku):
-    # calcula el promedio, incluyendo la nueva cantidad pedida
-    # devuelve la cantidad a pedir para un sku
-    # hay que almacenar en alguna parte este promedio
-    # la idea es que cuando LLEGUE un PEDIDO, si este se acepta, actualizar el valor de la suma para ese sku
-    '''
-    Falta un handling acá. Cuando prom_request está vacío se cae este método.
-    promedio = prom_request[sku][0] / prom_request[sku][1]
-    '''
-    used_by_amount = Product.objects.get(sku=int(sku)).batch
-    return used_by_amount * REQUEST_FACTOR
-
-def actualizar_promedio(sku, cantidad_pedida):
-    # actualiza el promedio de peticiones
-    prom_request[sku][0] += cantidad_pedida
-
-
 # def validate_post_body(body):
 #     valid_keys = ['store_destination_id', 'sku_id', 'amount', 'group']
 #     return set(body.keys()) == set(valid_keys)
 
 
 # Funciones útiles para trabajar con otros grupos
-def get_sku_stock_extern(group_number, sku, inventories):
+def get_sku_stock_extern(group_number, sku):
     """
     obtiene el inventario de group_number, y devuelve el numero si tengan en stock y False en otro caso
     """
-    inventorie = inventories.get(group_number, False)
-    if inventorie:
-        print("Ya tengo su inventario", inventorie)
-        for product in inventorie:
-            gotcha = product.get("sku", False)
-            if gotcha:
-                if sku == gotcha:
-                    try:
+    try:
+        response = requests.get("http://tuerca{}.ing.puc.cl/inventories".format(group_number))
+        response = json.loads(response.text)
+        inventories[group_number] = response
+        #print("Response1:", response, type(response))
+        if len(response) > 0:
+            for product in response:
+                gotcha = product.get("sku", False)
+                if gotcha:
+                    if sku == gotcha:
                         print("gotcha {}, sku: {}".format(gotcha, sku))
                         return product["total"]
-                    except:
-                        return False
-            else:
-                return False
-    else:
-        try:
-            response = requests.get("http://tuerca{}.ing.puc.cl/inventories".format(group_number))
-            response = json.loads(response.text)
-            inventories[group_number] = response
-            #print("Response1:", response, type(response))
-            if len(response) > 0:
-                for product in response:
-                    gotcha = product.get("sku", False)
-                    if gotcha:
-                        if sku == gotcha:
-                            print("gotcha {}, sku: {}".format(gotcha, sku))
-                            return product["total"]
-                return False
-            else:
-                return False
-        except Exception as err:
-            print("otro error: ", err)
             return False
+        else:
+            return False
+    except Exception as err:
+        print("otro error: ", err)
+        return False
 
 
 def send_oc(group_number, product, quantity):
@@ -143,44 +93,6 @@ def send_oc(group_number, product, quantity):
                             headers=headers, json=body)
     return response
 
-def request_sku_extern(sku, quantity, inventories=[]):
-    """
-    dado un sku y la cantidad a pedir, va a buscar entre todos los grupos que lo entregan y
-    poner ordenes hasta cumplir la cantidad deseada
-    retorna true si logro pedir quantity, y false si pidio menos
-    """
-    pending = float(quantity)
-    product = Product.objects.get(pk=sku)
-    productors = product.productors.split(",")
-    choice = random.choice([1,2])
-    if choice % 2 == 0:
-        productors.reverse()
-    for group in productors:
-        if group != "9":
-            available = get_sku_stock_extern(group, sku, inventories)
-            if available:
-                to_order = int(min(pending, available))
-                response = send_oc(group, product, to_order)
-                try:
-                    response = json.loads(response.text)
-                    #print("Response2:", response)
-                    if response["aceptado"]:
-                        pending -= float(response["cantidad"])
-                        '''
-                        Se imprime que lo aceptaron sólo si no hay exception
-                        '''
-                        if pending <= 0:
-                            return True, 0
-                except Exception as err:
-                    print("Este error: ", err)
-                    print("RESPONSE CON ERROR: ", response)
-                    continue
-    return False, pending
-
-
-def validate_post_body(body):
-    valid_keys = ['almacenId', 'sku', 'cantidad', 'oc']
-    return set(body.keys()) == set(valid_keys)
 
 def is_our_product(sku):
     return int(sku) in sku_products
@@ -190,8 +102,7 @@ def get_inventories(view=False):
     if not view:
         return [{"sku": sku, "total": cantidad, "nombre": Product.objects.get(sku=sku).name} for sku,cantidad in _.items()]
     else:
-        return [{"sku": sku, "total": int(cantidad*0.6), "nombre": Product.objects.get(sku=sku).name} for sku,cantidad in _.items()]
-
+        return [{"sku": sku, "total": int(cantidad*0.5), "nombre": Product.objects.get(sku=sku).name} for sku,cantidad in _.items()]
 
 
 def move_products(products, almacenId):
@@ -200,26 +111,30 @@ def move_products(products, almacenId):
     for product in products:
         producto_movidos.append(product)
         response = move_product_inter_almacen(product["_id"], almacenId)
-        print(response)
     return producto_movidos
 
 def send_to_somewhere(sku, cantidad, to_almacen):
     # Mueve el producto y la cantidad que se quiera hacia el almacen que se quiera (solo de nosotros)
     producto_movidos = []
+    print("cantidad que quiero mover", cantidad)
     for almacen, almacenId in almacenes.items():
+        print("Estoy parado en ", almacen)
         if almacen != "despacho" and almacenId != to_almacen:
             products = get_products_with_sku(almacenId, sku)
-            diff = len(products) - cantidad
-            try:
-                if diff >= 0:
-                    producto_movidos += move_products(products[:cantidad+1], to_almacen)
+            if len(products) > 0:
+                diff = len(products) - cantidad
+                try:
+                    if diff >= 0:
+                        print("Voy a mover", len(products[:cantidad]))
+                        producto_movidos += move_products(products[:cantidad], to_almacen)
+                        return producto_movidos
+                    else:
+                        print("No puedo mover todo, asique voy a mover ", len(products))
+                        producto_movidos += move_products(products, to_almacen)
+                        cantidad -= len(products)
+                except Exception as err:
+                    print(err)
                     return producto_movidos
-                else:
-                    producto_movidos += move_products(products, to_almacen)
-                    cantidad -= len(products)
-            except Exception as err:
-                print(err)
-                return producto_movidos
 
 
 def make_space_in_almacen(almacen_name, to_almacen_name, amount_to_free, banned_sku=[]):
@@ -270,7 +185,7 @@ def make_space_in_almacen(almacen_name, to_almacen_name, amount_to_free, banned_
 
 
 def send_order_another_group(order_id, almacenId):
-    #esta funcion mueve el producto a despacho
+    # esta funcion mueve el producto a despacho
     # para luego enviar ese producto al grupo que lo pidio
     order_entity = PurchaseOrder.objects.get(oc_id=order_id)
     sku = order_entity.sku
@@ -291,10 +206,9 @@ def send_order_another_group(order_id, almacenId):
 def create_base_products():
     for sku in sku_products:
         producto = Product.objects.get(sku=sku)
-        cantidad = 10*producto.batch
-        if cantidad > 300:
-            cantidad = 3*producto.batch
+        cantidad = producto.batch
         response = make_a_product(sku, cantidad)
+        print(response)
         time.sleep(1)
 
 
@@ -302,6 +216,7 @@ def create_middle_products():
     _, inventario = get_inventory()
     print(_)
     for sku in minimum_stock:
+        # if sku == 1110:
         if inventario.get(str(sku), 0) < 30:
             print("entro")
             ingredientes = Ingredient.objects.filter(sku_product=int(sku))
@@ -318,6 +233,9 @@ def create_middle_products():
                         send_to_somewhere(str(ingredient.sku_ingredient.sku), cantidad_pedir, almacenes["despacho"])
                 response = make_a_product(int(sku), cantidad)
                 print(response)
+            else:
+                print("No tengo todo para producir {}".format(sku))
+
 
 def get_base_products():
     for sku, cantidad in base_minimum_stock.items():
@@ -328,8 +246,31 @@ def get_base_products():
             productors.reverse()
         for group in productors:
             if group != "9":
-                inventories = {}
-                available = get_sku_stock_extern(group, sku, inventories)
+                available = get_sku_stock_extern(group, sku)
                 if available:
                     to_order = int(min(product.batch, available))
                     response = send_oc(group, product, to_order)
+
+
+
+def check_space(quantity, almacenName):
+    almacens = get_almacenes()
+    for almacen in almacens:
+        if almacen["_id"] == almacenes[almacenName]:
+            if quantity > (almacen['totalSpace'] - almacen['usedSpace']):
+                return False
+            else:
+                return True
+
+
+
+
+def vaciar_pulmon():
+    almacens = get_almacenes()
+    print(almacens)
+    for almacen in almacens:
+        if almacen["_id"] == almacenes['pulmon']:
+            libre = ['libre1', 'libre2']
+            make_space_in_almacen('pulmon', random.choice(libre), min(int(almacen['usedSpace']), 100))
+            break
+
