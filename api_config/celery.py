@@ -1,5 +1,6 @@
 import os
 from celery import Celery
+from celery.schedules import crontab
 
 #  https://djangopy.org/how-to/handle-asynchronous-tasks-with-celery-and-django
 
@@ -9,40 +10,34 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'api_config.settings')
 app = Celery('api_config')
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
+# https://docs.celeryproject.org/en/latest/userguide/periodic-tasks.html#crontab-schedules
+
 app.conf.beat_schedule = {
-    'thread-check': {  #name of the scheduler
-        'task': 'thread-check',  # task name which we have created in tasks.py
-        'schedule': 600.0,   # set the period of running
-                            # set the args
+    'watch-server': { 
+        'task': 'watch-server',  
+        'schedule': crontab(minute='*/5'),   
     },
-
-    'thread-check-10000': {  #name of the scheduler
-        'task': 'thread-check-10000',  # task name which we have created in tasks.py
-        'schedule': 1200.0,   # set the period of running
-                        # set the args
+    'check-not-finished': { 
+        'task': 'check-not-finished', 
+        'schedule': crontab(minute='*/15'),
+        'relative': True  
     },
-    'watch-server': {  #name of the scheduler
-        'task': 'watch-server',  # task name which we have created in tasks.py
-        'schedule': 180.0,   # set the period of running
-                        # set the args
+    'check-not-initiated': {  
+        'task': 'check-not-initiated',  
+        'schedule': crontab(minute='*/10'),   
     },
-    'check-not-finished': {  #name of the scheduler
-        'task': 'check-not-finished',  # task name which we have created in tasks.py
-        'schedule': 180.0,   # set the period of running
-                            # set the args
+    'create-base-products': {  
+        'task': 'base-products',  
+        'schedule': crontab(minute='*/20'),   
     },
-    'create-base-products': {  #name of the scheduler
-        'task': 'base-products',  # task name which we have created in tasks.py
-        'schedule': 1200.0,   # set the period of running
-                            # set the args
+    'get-base-products': {  
+        'task': 'get-base-products',  
+        'schedule': crontab(minute='*/20'),   
     },
-    'get-base-products': {  #name of the scheduler
-        'task': 'get-base-products',  # task name which we have created in tasks.py
-        'schedule': 1200.0,   # set the period of running
-                            # set the args
+    'empty-pulmon': {  
+        'task': 'empty-pulmon',  
+        'schedule': crontab(minute='*/20'),   
     }
-
-
 }
 
 app.autodiscover_tasks()
