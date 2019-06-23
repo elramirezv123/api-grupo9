@@ -204,18 +204,23 @@ def send_order_another_group(order_id, almacenId):
 
 
 def create_base_products():
-    for sku in sku_products:
-        producto = Product.objects.get(sku=sku)
-        cantidad = producto.batch
-        response = make_a_product(sku, cantidad)
-        print(response)
-        time.sleep(1)
-
-
-def create_middle_products():
     _, inventario = get_inventory()
-    print(_)
-    for sku in minimum_stock:
+    for sku in sku_products:
+        if inventario.get(str(sku), 0) <= 30:
+            producto = Product.objects.get(sku=sku)
+            cantidad = producto.batch
+            if cantidad == 1: # Esto es para el salmón que su batch es de 1, pero dura 720 horas.
+                cantidad*=3
+            response = make_a_product(sku, cantidad)
+            print(response)
+            time.sleep(1)
+
+
+def create_middle_products(skus=[]):
+    _, inventario = get_inventory()
+    if not skus:
+        skus = minimum_stock
+    for sku in skus:
         # if sku == 1110:
         if inventario.get(str(sku), 0) < 30:
             print("entro")
@@ -261,6 +266,7 @@ def check_space(quantity, almacenName):
                 return False
             else:
                 return True
+
 
 def empty_recepcion_HTTPless():
     almacens = get_almacenes()
@@ -344,7 +350,6 @@ def empty_pulmon():
                                     print("### se acabo la capacidad de {}".format(nombre))
                                 if llenos == 2:
                                     print("### se llenaros los dos libres")
-                                    ##TODO borrar inventario?
                                     break
                         except:
                             print("### ERROR AL VACIAR PULMON, TERMINANDO")
