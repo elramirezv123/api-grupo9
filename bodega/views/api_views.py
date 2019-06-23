@@ -121,13 +121,13 @@ def test(request):
     # try_to_produce_highlevel(20004, 1, stock, stock_almacen)
     # create_base_products()
     # create_middle_products()
-    # vaciar_pulmon()
+    vaciar_pulmon()
     # new_oc = PurchaseOrder.objects.create(oc_id=new['_id'], sku=10001, 
     #                                 client="algungrupo", provider=id_grupos['9'],
     #                                 amount=1, price=1000,
     #                                 channel='ftp', deadline=(timezone.now() + timedelta(hours=1)))
     
     # check_not_iniciated()
-    check_not_finished()
+    # check_not_finished()
 
     return JsonResponse({'test': 'working'}, safe=False, status=200)

@@ -282,18 +282,33 @@ def vaciar_pulmon():
     for almacen in almacens:
         if almacen["_id"] == almacenes['pulmon']:
             pendiente_vaciar = int(almacen['usedSpace'])
-            print("hay que vaciar {} del pulmon".format(pendiente_vaciar)) 
-            while pendiente_vaciar > 0:
+            llenos = 0
+            print("### hay que vaciar {} del pulmon".format(pendiente_vaciar))
+            while pendiente_vaciar > 0: 
                 for nombre in libres.keys():
-                    print("moviendo a {}".format(nombre))
+                    print("### moviendo a {}".format(nombre))
                     libre = libres[nombre]
                     cap_disp_destino = int(libre['totalSpace']) - int(libre['usedSpace'])
                     while cap_disp_destino > 0 and pendiente_vaciar > 0:
-                        cantidad = min(pendiente_vaciar, cap_disp_destino, 100)
-                        if make_space_in_almacen('pulmon', libre, cantidad):
-                            pendiente_vaciar -= cantidad
-                            cap_disp_destino -= cantidad
-                            if pendiente_vaciar == 0:
-                                print("termine de vaciar el pulmon")
-                            if cap_disp_destino == 0:
-                                print("se acabo la capacidad de {}".format(nombre))
+                        print("### {} tiene capacidad disponible {}".format(nombre, cap_disp_destino))
+                        cantidad = min(pendiente_vaciar, cap_disp_destino, 200)
+                        print("### tratando de mover {}".format(cantidad))
+                        try:
+                            if make_space_in_almacen('pulmon', nombre, cantidad):
+                                pendiente_vaciar -= cantidad
+                                cap_disp_destino -= cantidad
+                                print("### hay que vaciar {} del pulmon".format(pendiente_vaciar))                                
+                                if pendiente_vaciar == 0:
+                                    print("### termine de vaciar el pulmon")
+                                    break
+                                if cap_disp_destino == 0:
+                                    llenos += 1
+                                    print("### se acabo la capacidad de {}".format(nombre))
+                                if llenos == 2:
+                                    print("### se llenaros los dos libres")
+                                    ##TODO borrar inventario?
+                                    break
+                        except:
+                            print("### ERROR AL VACIAR PULMON, TERMINANDO")
+
+                
