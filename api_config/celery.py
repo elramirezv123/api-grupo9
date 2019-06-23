@@ -15,7 +15,7 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 app.conf.beat_schedule = {
     'watch-server': { 
         'task': 'watch-server',  
-        'schedule': crontab(minute='*/5'),   
+        'schedule': crontab(minute='*/10'),   
     },
     'check-not-finished': { 
         'task': 'check-not-finished', 
@@ -34,9 +34,10 @@ app.conf.beat_schedule = {
         'task': 'get-base-products',  
         'schedule': crontab(minute='*/20'),   
     },
-    'empty-pulmon': {  
-        'task': 'empty-pulmon',  
-        'schedule': crontab(minute='*/20'),   
+    'create-mid-products': {  
+        'task': 'create-mid-products',  
+        'schedule': crontab(minute='*/20'), 
+        'relative': True  
     }
 }
 
