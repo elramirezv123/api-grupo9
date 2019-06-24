@@ -1,15 +1,10 @@
 # Constantes útiles
 
-# Umbral, se pedirá si es que tenemos menos de stock_minimo + DELTA
-DELTA = 0
-# Factor de multiplicación para pedidos
-REQUEST_FACTOR = 10
-
 headers = {'Content-Type': 'application/json'}
 
-# sku_products = [1001, 1002, 1004, 1008, 1009, 1010, 1013, 1016]
+sku_products = [1001, 1002, 1004, 1008, 1009, 1010, 1013, 1016]
 
-sku_products =  [1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016]
+# sku_products =  [1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016]
 
 # esta en lotes, no en cantidades
 minimum_stock = [
@@ -39,18 +34,18 @@ minimum_stock = [
     1407
 ]
 
-# base_minimum_stock = {
-# "1003": 50,
-# "1005": 50,
-# "1006": 50,
-# "1007": 50,
-# "1011": 50,
-# "1012": 50,
-# "1014": 50,
-# "1015": 50
-# }
+base_minimum_stock = {
+"1003": 50,
+"1005": 50,
+"1006": 50,
+"1007": 50,
+"1011": 50,
+"1012": 50,
+"1014": 50,
+"1015": 50
+}
 
-base_minimum_stock = {}
+# base_minimum_stock = {}
 
 #{sku:[suma, numero_items]}
 

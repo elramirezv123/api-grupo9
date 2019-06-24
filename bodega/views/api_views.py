@@ -104,7 +104,6 @@ def test(request):
     # print(type(getOc("5cee74b0bcf7bb00048df71d")))
     # c = getOc("5cee74b0bcf7bb00048df71d")
     # print(c)
-    # watch_server()
     # create_base_products()
     # get_base_products()
     # response = get_skus_with_stock(almacenes["pulmon"])
@@ -119,14 +118,16 @@ def test(request):
     # create_base_products()
     # create_middle_products()
     # vaciar_pulmon()
-    # new = newOc('lalalala', id_grupos['9'],"10003", 120, 1, 1000, 'ftp')
+    # watch_server()
+    # new = newOc('lalalala', id_grupos['9'],"10013", 120, 1, 1000, 'ftp')
     # print(new)
     # print("creamos la orden de compra")
     # new_oc, created = PurchaseOrder.objects.get_or_create(oc_id=new['_id'], sku=10001, 
     #                                 client="algungrupo", provider=id_grupos['9'],
     #                                 amount=1, price=1000,
     #                                 channel='ftp', deadline=(timezone.now() + timedelta(hours=1)))
-    check_not_initiated()
+    # check_not_initiated()
     # check_not_finished()
+    # empty_recepcion_HTTPless()
 
     return JsonResponse({'test': 'working'}, safe=False, status=200)

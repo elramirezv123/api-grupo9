@@ -1,4 +1,4 @@
-from bodega.constants.logic_constants import base_minimum_stock, almacen_stock, headers, minimum_stock, prom_request, DELTA, sku_products, REQUEST_FACTOR
+from bodega.constants.logic_constants import base_minimum_stock, almacen_stock, headers, minimum_stock, prom_request, sku_products
 from bodega.constants.config import almacenes, id_grupos
 from bodega.models import Product, Ingredient, PurchaseOrder
 from bodega.helpers.bodega_functions import get_skus_with_stock, get_almacenes, get_products_with_sku, send_product
@@ -209,10 +209,9 @@ def create_base_products():
         if inventario.get(str(sku), 0) <= 30:
             producto = Product.objects.get(sku=sku)
             cantidad = producto.batch
-            if cantidad == 1: # Esto es para el salmón que su batch es de 1, pero dura 720 horas.
+            if cantidad == 1: # Esto es para el camarón que su batch es de 1, pero dura 720 horas.
                 cantidad*=3
             response = make_a_product(sku, cantidad)
-            print(response)
             time.sleep(1)
 
 
@@ -221,40 +220,37 @@ def create_middle_products(skus=[]):
     if not skus:
         skus = minimum_stock
     for sku in skus:
-        # if sku == 1110:
-        if inventario.get(str(sku), 0) < 30:
-            print("entro")
+        if inventario.get(str(sku), 0) < 15:
             ingredientes = Ingredient.objects.filter(sku_product=int(sku))
-            print("Ingredientes", ingredientes)
             lista_a_pedir = [True if inventario.get(str(ingre.sku_ingredient.sku), False) else False for ingre in ingredientes]
             if False not in lista_a_pedir:
                 cantidad = ingredientes[0].sku_product.batch
                 for ingredient in ingredientes:
                     cantidad_pedir = math.ceil(cantidad / ingredient.production_batch) * ingredient.volume_in_store
                     in_despacho = _["despacho"].get(str(ingredient.sku_ingredient.sku), 0)
-                    print("En despacho", in_despacho, "Cantidad a pedir", cantidad_pedir)
                     cantidad_pedir = cantidad_pedir - in_despacho
                     if cantidad_pedir > 0:
                         send_to_somewhere(str(ingredient.sku_ingredient.sku), cantidad_pedir, almacenes["despacho"])
                 response = make_a_product(int(sku), cantidad)
-                print(response)
             else:
                 print("No tengo todo para producir {}".format(sku))
 
 
 def get_base_products():
+    _, inventario = get_inventory()
     for sku, cantidad in base_minimum_stock.items():
-        product = Product.objects.get(sku=sku)
-        productors = product.productors.split(",")
-        choice = random.choice([1,2])
-        if choice % 2 == 0:
-            productors.reverse()
-        for group in productors:
-            if group != "9":
-                available = get_sku_stock_extern(group, sku)
-                if available:
-                    to_order = int(min(product.batch, available))
-                    response = send_oc(group, product, to_order)
+        if inventario.get(str(sku), 0) < 30:
+            product = Product.objects.get(sku=sku)
+            productors = product.productors.split(",")
+            choice = random.choice([1,2])
+            if choice % 2 == 0:
+                productors.reverse()
+            for group in productors:
+                if group != "9":
+                    available = get_sku_stock_extern(group, sku)
+                    if available:
+                        to_order = int(min(product.batch, available))
+                        response = send_oc(group, product, to_order)
 
 
 
@@ -280,30 +276,21 @@ def empty_recepcion_HTTPless():
         if almacen["_id"] == almacenes['recepcion']:
             pendiente_vaciar = int(almacen['usedSpace'])
             llenos = 0
-            print(">>> hay que vaciar {} del recepcion".format(pendiente_vaciar))
             while pendiente_vaciar > 0: 
                 for nombre in libres.keys():
-                    print(">>> moviendo a {}".format(nombre))
                     libre = libres[nombre]
                     cap_disp_destino = int(libre['totalSpace']) - int(libre['usedSpace'])
                     while cap_disp_destino > 0 and pendiente_vaciar > 0:
-                        print(">>> {} tiene capacidad disponible {}".format(nombre, cap_disp_destino))
                         cantidad = min(pendiente_vaciar, cap_disp_destino, 200)
-                        print(">>> tratando de mover {}".format(cantidad))
                         try:
                             if make_space_in_almacen('recepcion', nombre, cantidad):
                                 pendiente_vaciar -= cantidad
-                                cap_disp_destino -= cantidad
-                                print(">>> hay que vaciar {} del recepcion".format(pendiente_vaciar))                                
+                                cap_disp_destino -= cantidad                                
                                 if pendiente_vaciar == 0:
-                                    print(">>> termine de vaciar el recepcion")
                                     break
                                 if cap_disp_destino == 0:
                                     llenos += 1
-                                    print(">>> se acabo la capacidad de {}".format(nombre))
                                 if llenos == 2:
-                                    print(">>> se llenaros los dos libres")
-                                    ##TODO borrar inventario?
                                     break
                         except:
                             print("### ERROR AL VACIAR RECEPCION, TERMINANDO")
@@ -311,12 +298,6 @@ def empty_recepcion_HTTPless():
 
 def empty_pulmon():
     almacens = get_almacenes()
-    # print(almacens)
-    # for almacen in almacens:
-    #     if almacen["_id"] == almacenes['pulmon']:
-    #         libre = ['libre1', 'libre2']
-    #         make_space_in_almacen('pulmon', random.choice(libre), min(int(almacen['usedSpace']), 100))
-    #         break
     libres = {}
     for almacen in almacens:
         if almacen["_id"] == almacenes['libre1']:
@@ -327,29 +308,21 @@ def empty_pulmon():
         if almacen["_id"] == almacenes['pulmon']:
             pendiente_vaciar = int(almacen['usedSpace'])
             llenos = 0
-            print("### hay que vaciar {} del pulmon".format(pendiente_vaciar))
             while pendiente_vaciar > 0: 
                 for nombre in libres.keys():
-                    print("### moviendo a {}".format(nombre))
                     libre = libres[nombre]
                     cap_disp_destino = int(libre['totalSpace']) - int(libre['usedSpace'])
                     while cap_disp_destino > 0 and pendiente_vaciar > 0:
-                        print("### {} tiene capacidad disponible {}".format(nombre, cap_disp_destino))
                         cantidad = min(pendiente_vaciar, cap_disp_destino, 200)
-                        print("### tratando de mover {}".format(cantidad))
                         try:
                             if make_space_in_almacen('pulmon', nombre, cantidad):
                                 pendiente_vaciar -= cantidad
-                                cap_disp_destino -= cantidad
-                                print("### hay que vaciar {} del pulmon".format(pendiente_vaciar))                                
+                                cap_disp_destino -= cantidad                               
                                 if pendiente_vaciar == 0:
-                                    print("### termine de vaciar el pulmon")
                                     break
                                 if cap_disp_destino == 0:
                                     llenos += 1
-                                    print("### se acabo la capacidad de {}".format(nombre))
                                 if llenos == 2:
-                                    print("### se llenaros los dos libres")
                                     break
                         except:
                             print("### ERROR AL VACIAR PULMON, TERMINANDO")

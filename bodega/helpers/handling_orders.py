@@ -1,7 +1,7 @@
 import pysftp
 import xml.etree.ElementTree as ET
 import json
-import requests, requests, math
+import requests, math, pytz
 from collections import defaultdict
 from bodega.models import File, PurchaseOrder, Ingredient, Product
 from bodega.helpers.utils import logger
@@ -38,7 +38,6 @@ def finish_oc(oc):
         for product in products[:(oc.amount-i)]:
             response = send_product(product['_id'], oc.oc_id, 'CualquierDireccion', oc.price)
             i+=1
-            print(response)
             oc.sended=i
             oc.save()
         
@@ -52,10 +51,8 @@ def finish_oc(oc):
 
 
 def check_not_finished():
-    not_finished_ocs = PurchaseOrder.objects.filter(state='iniciada', channel='ftp').order_by('created_at')
-    print(not_finished_ocs)
+    not_finished_ocs = PurchaseOrder.objects.filter(state='iniciada', channel='ftp', deadline__gte=timezone.now()).order_by('created_at')
     if not_finished_ocs:
-        print("Tengo iniciadas")
         stock_almacenes, stock = get_inventory()
         for oc in not_finished_ocs:
             stock_actual = stock_almacenes['cocina'].get(str(oc.sku), 0)
@@ -69,15 +66,13 @@ def check_not_initiated():
     para intentar producir los productos de nivel 10k, 20k y 30k.
     """
     not_iniciated_ocs = PurchaseOrder.objects.filter(state='creada', channel='ftp').order_by('created_at') # Filtramos las ocs que no han sido atendidas aun
-    print(not_iniciated_ocs)
     if not_iniciated_ocs:
         _, stock = get_inventory()
         for oc in not_iniciated_ocs:
             if oc.deadline < timezone.now():
                 oc.delete()
             else:
-                ingredients = Ingredient.objects.filter(sku_product=oc.sku)
-                print("Necesito los ingredientes ", ingredients) # Obtenemos que ingredientes necesita
+                ingredients = Ingredient.objects.filter(sku_product=oc.sku) # Obtenemos que ingredientes necesita
                 all_in_stock = True # Partimos asumiendo que tenemos todos los ingredientes en stock
                 space = 0
                 los_que_faltan = []
@@ -91,7 +86,6 @@ def check_not_initiated():
                         space += quantity
 
                 if all_in_stock:
-                    print("Los tengo")
                     # Si tenemos todos los ingredientes, hacemos espacio en cocina y los enviamos a cocina para producir... Si no, esperamos que en la siguiente ejecucion ya los tengamos todos
                     space_available = check_space(space, 'cocina')
                     if not space_available:
@@ -100,7 +94,6 @@ def check_not_initiated():
                         quantity = oc.amount * ing.volume_in_store
                         send_to_somewhere(str(ing.sku_ingredient.sku), quantity, almacenes["cocina"])
                     response = make_a_product(oc.sku, oc.amount)
-                    print(response)
                     response = receiveOc(oc.oc_id)
                     oc.state='iniciada'
                     oc.save()
@@ -139,9 +132,9 @@ def watch_server():
                             raw_response = getOc(oc_id)
                             if raw_response:
                                 response = raw_response[0]
-                                deadline = response["fechaEntrega"]
-                                if deadline < timezone.timezone.now():
-                                    deadline = deadline.replace("T", " ").replace("Z","")
+                                deadline = response["fechaEntrega"].replace("T", " ").replace("Z","")
+                                deadline = datetime.datetime.strptime(deadline, '%Y-%m-%d %H:%M:%S.%f').replace(tzinfo=pytz.UTC)
+                                if deadline > timezone.now():
                                     file_entity, file_created = File.objects.get_or_create(filename=attr.filename,
                                                             processed=True,
                                                             attended=False)
