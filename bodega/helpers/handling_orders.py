@@ -1,8 +1,9 @@
 import pysftp
 import xml.etree.ElementTree as ET
 import json
-import requests
-from bodega.models import File, PurchaseOrder, Ingredient
+import requests, math, pytz
+from collections import defaultdict
+from bodega.models import File, PurchaseOrder, Ingredient, Product
 from bodega.helpers.utils import logger
 from bodega.helpers.oc_functions import getOc, receiveOc
 from bodega.helpers.bodega_functions import *
@@ -10,64 +11,96 @@ from bodega.constants.config import ocURL, almacenes
 from .utils import hashQuery
 from bodega.constants.logic_constants import *
 from bodega.helpers.functions import *
+from django.utils import timezone
 
 
-# def try_to_produce_highlevel(sku, amount, inventories):
-#     ingredients = Ingredient.objects.filter(sku_product_id=sku)
-#     ing_with_amount_to_produce = {str(ing.sku_ingredient_id): ing.volume_in_store*amount for ing in ingredients}
-#     needed_skus = [ing.sku_ingredient_id for ing in ingredients]
-#     have_enough = True
-#     for sku_info in inventories:
-#         if int(sku_info['sku']) in needed_skus:
-#             if int(sku_info['total']) < ing_with_amount_to_produce[sku_info['sku']]:
-#                 have_enough = False
-#     if have_enough:
-#         kitchen_space_needed = sum([ amount for _, amount in ing_with_amount_to_produce.items()])
-#         # Hacemos el espacio en la cocina
-#         make_space_in_almacen('cocina', "libre1", kitchen_space_needed + 5)
-#         # Movemos los ingredientes a la cocina
-#         for sku, amount in ing_with_amount_to_produce:
-#             send_to_somewhere(sku, amount, almacenes['cocina'])
-#         # Producimos!
-#         make_a_product()
+def send_to_profe(oc): # Esta funcion debiera ser llamada con esa libreria que programa la ejecucion
+    stock_almacen, stock = get_inventory()
+    for almacen in stock_almacen:
+        if oc.sku in stock_almacen[almacen]: # Vemos si el sushi esta en el almacen
+            products = get_products_with_sku(almacenes[almacen], oc.sku)
+            count = 0
+            ready = False
+            for product in products:
+                send_product(product['_id'], oc.oc_id, 'CualquierDireccion', oc.price)
+                count += 1
+                if count >= oc.amount:
+                    ready = True
+                    break
+            if ready: # Si se completo la order, no revisamos mas almacenes
+                break
+
+
+def finish_oc(oc):
+    products = get_products_with_sku(almacenes['cocina'], oc.sku)
+    i = oc.sended
+    if oc.sended < oc.amount:
+        for product in products[:(oc.amount-i)]:
+            response = send_product(product['_id'], oc.oc_id, 'CualquierDireccion', oc.price)
+            i+=1
+            oc.sended=i
+            oc.save()
+        
+        if oc.sended >= oc.amount:
+            oc.state='finalizada'
+            oc.save()
+    else:
+        oc.state='finalizada'
+        oc.save()
+
 
 
 def check_not_finished():
+    not_finished_ocs = PurchaseOrder.objects.filter(state='iniciada', channel='ftp', deadline__gte=timezone.now()).order_by('created_at')
+    if not_finished_ocs:
+        stock_almacenes, stock = get_inventory()
+        for oc in not_finished_ocs:
+            stock_actual = stock_almacenes['cocina'].get(str(oc.sku), 0)
+            if stock_actual > 0:
+                finish_oc(oc)
+
+
+def check_not_initiated():
     """
     Revisa las ocs que no esten finished y las recorre llamando a try_to_produce_highlevel
     para intentar producir los productos de nivel 10k, 20k y 30k.
     """
-    not_finished_ocs = PurchaseOrder.objects.filter(finished=False)
-    if not_finished_ocs:
-        stock_almacen, stock = get_inventory()
-        almacen_skus = { almacen: list(obj.keys()) for almacen, obj in stock_almacen.items()}
-        for oc in not_finished_ocs:
-            try:
-                stock = int(stock[oc.sku])
-            except:
-                continue
-            if stock >= oc.amount:
-                # print("tenemos!")
-                almacen_name = None
-                for almacen, skus in almacen_skus.items():
-                    if str(oc.sku) in skus:
-                        almacen_name = almacen
-                        break
-                products = get_products_with_sku(almacenes[almacen_name], oc.sku)
-                count = 0
-                for product in products:
-                    # print("enviando {}".format(product['_id']))
-                    send_product(product['_id'], oc.oc_id, 'CualquierDireccion', oc.price)
-                    count += 1
-                    if count >= oc.amount:
-                        break
-                oc.finished = True
-                oc.save()
+    not_iniciated_ocs = PurchaseOrder.objects.filter(state='creada', channel='ftp').order_by('created_at') # Filtramos las ocs que no han sido atendidas aun
+    if not_iniciated_ocs:
+        _, stock = get_inventory()
+        for oc in not_iniciated_ocs:
+            if oc.deadline < timezone.now():
+                oc.delete()
             else:
-                try:
-                    producir_10mil(oc.sku, oc.amount)
-                except:
-                    pass
+                ingredients = Ingredient.objects.filter(sku_product=oc.sku) # Obtenemos que ingredientes necesita
+                all_in_stock = True # Partimos asumiendo que tenemos todos los ingredientes en stock
+                space = 0
+                los_que_faltan = []
+                for ing in ingredients:
+                    quantity = oc.amount * ing.volume_in_store
+                    real_stock = stock.get(str(ing.sku_ingredient.sku), 0)
+                    if real_stock < quantity: # Si no tenemos lo suficiente mandamos a producir del ingrediente
+                        all_in_stock = False
+                        los_que_faltan.append(ing.sku_ingredient.sku) # Con esto se espera que la proxima vez que reisemos esta oc, ya tengamos este ingrediente en stock
+                    else:
+                        space += quantity
+
+                if all_in_stock:
+                    # Si tenemos todos los ingredientes, hacemos espacio en cocina y los enviamos a cocina para producir... Si no, esperamos que en la siguiente ejecucion ya los tengamos todos
+                    space_available = check_space(space, 'cocina')
+                    if not space_available:
+                        make_space_in_almacen("cocina", random.choice(['libre1', 'libre2']), space)
+                    for ing in ingredients:
+                        quantity = oc.amount * ing.volume_in_store
+                        send_to_somewhere(str(ing.sku_ingredient.sku), quantity, almacenes["cocina"])
+                    response = make_a_product(oc.sku, oc.amount)
+                    response = receiveOc(oc.oc_id)
+                    oc.state='iniciada'
+                    oc.save()
+
+                else:
+                    create_middle_products(los_que_faltan)
+
 
 def watch_server():
     """
@@ -81,11 +114,10 @@ def watch_server():
     conn_opts = pysftp.CnOpts()
     conn_opts.hostkeys = None
     with pysftp.Connection(host=HOST_NAME, username=USER_NAME, password=USER_PASSWORD, port=HOST_PORT, cnopts=conn_opts) as sftp:
-        # print("Conexión establecida con servidor STFP!")
+        print("Conexión establecida con servidor STFP!")
         sftp.cwd('/pedidos')
         dir_structure = sftp.listdir_attr()
         for attr in dir_structure:
-            # print(attr)
             with sftp.open(attr.filename) as archivo:
                 file_entity = File.objects.filter(filename=attr.filename)
                 must_process = False
@@ -95,24 +127,20 @@ def watch_server():
                 root = tree.getroot()
                 if must_process:
                     for node in root:
-                        # print(node)
                         if node.tag == 'id':
                             oc_id = node.text
-                            # print(oc_id)
                             raw_response = getOc(oc_id)
                             if raw_response:
                                 response = raw_response[0]
-                                # print(response)
                                 deadline = response["fechaEntrega"].replace("T", " ").replace("Z","")
-                                recieve_response = receiveOc(oc_id)
-                                if 'error' not in recieve_response[0].keys():
-                                    print('pasando if')
-                                    file_entity= File.objects.create(filename=attr.filename,
+                                deadline = datetime.datetime.strptime(deadline, '%Y-%m-%d %H:%M:%S.%f').replace(tzinfo=pytz.UTC)
+                                if deadline > timezone.now():
+                                    file_entity, file_created = File.objects.get_or_create(filename=attr.filename,
                                                             processed=True,
                                                             attended=False)
-                                    new_oc = PurchaseOrder.objects.create(oc_id=response["_id"], sku=response['sku'], client=response['cliente'], provider=response['proveedor'],
-                                                                    amount=response['cantidad'], price=response["precioUnitario"], channel=response['canal'], deadline=deadline, finished=False)
-                                    file_entity.save()
-                                    new_oc.save()
-                                else:
-                                    print('Error: {}'.format(recieve_response['error']))
+                                    new_oc, oc_created = PurchaseOrder.objects.get_or_create(oc_id=response["_id"], sku=response['sku'], 
+                                                                        client=response['cliente'], provider=response['proveedor'],
+                                                                        amount=response['cantidad'], price=response["precioUnitario"],
+                                                                        channel=response['canal'], deadline=deadline)
+
+    

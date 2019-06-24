@@ -27,7 +27,7 @@ def hashQuery(query):
 
 
 def toMiliseconds(minutes):
-    start = (datetime.datetime.now() - datetime.datetime(1970,1,1)).total_seconds()
+    start = (datetime.datetime.now().replace(tzinfo=pytz.UTC) - datetime.datetime(1970,1,1).replace(tzinfo=pytz.UTC)).total_seconds()
     return int((start + minutes*60)*1000)
 
 def logger(caller_name, comment):
@@ -36,3 +36,8 @@ def logger(caller_name, comment):
                                      comment=comment,
                                      created_at=now)
     log_entity.save()
+
+
+def validate_post_body(body):
+    valid_keys = ['almacenId', 'sku', 'cantidad', 'oc']
+    return set(body.keys()) == set(valid_keys)

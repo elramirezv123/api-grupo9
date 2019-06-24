@@ -1,15 +1,17 @@
 import json
-from datetime import datetime, timedelta
+from datetime import timedelta
+from django.utils import timezone
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from bodega.constants.config import almacenes
-from bodega.helpers.handling_orders import watch_server, check_not_finished
+from bodega.helpers.handling_orders import watch_server, check_not_initiated, check_not_finished
 from bodega.constants.logic_constants import sku_products
-from bodega.models import Product, Ingredient, Request, File, PurchaseOrder
+from bodega.models import Product, Ingredient, File, PurchaseOrder
 from bodega.helpers.functions import *
-from bodega.helpers.utils import logger
+from bodega.helpers.utils import logger, validate_post_body
 from bodega.helpers.bodega_functions import get_skus_with_stock
 from bodega.helpers.oc_functions import getOc, declineOc, receiveOc, newOc
+from bodega.helpers.final_products_functions import try_to_produce_highlevel, try_to_produce_highlvl
 
 # https://www.webforefront.com/django/accessurlparamstemplates.html
 
@@ -86,10 +88,9 @@ def orders(request):
 
 
 def test(request):
-    sku = "1002"
-    cantidad = 1
-    logger('TEST', 'PIDIENDO SKU {} CANTIDAD {}'.format(sku, cantidad))
-    # new = newOc('5cc66e378820160004a4c3be','5cc66e378820160004a4c3c4',"1003", 120, cantidad, 10, 'b2b')
+    # sku = "1002"
+    # cantidad = 1
+
     # headers["group"] = "3"
     # body = {
     #         "sku": sku,
@@ -103,7 +104,6 @@ def test(request):
     # print(type(getOc("5cee74b0bcf7bb00048df71d")))
     # c = getOc("5cee74b0bcf7bb00048df71d")
     # print(c)
-    # watch_server()
     # create_base_products()
     # get_base_products()
     # response = get_skus_with_stock(almacenes["pulmon"])
@@ -112,4 +112,22 @@ def test(request):
     # check_not_finished()
     # current_stocks, current_sku_stocks = get_inventory()
     # request_for_ingredient('1106', 10, current_sku_stocks, {})
+    # stock_almacen, stock = get_inventory()
+    # try_to_produce_highlvl(20004, 1, stock, stock_almacen)
+    # try_to_produce_highlevel(20004, 1, stock, stock_almacen)
+    # create_base_products()
+    # create_middle_products()
+    # vaciar_pulmon()
+    # watch_server()
+    # new = newOc('lalalala', id_grupos['9'],"10013", 120, 1, 1000, 'ftp')
+    # print(new)
+    # print("creamos la orden de compra")
+    # new_oc, created = PurchaseOrder.objects.get_or_create(oc_id=new['_id'], sku=10001, 
+    #                                 client="algungrupo", provider=id_grupos['9'],
+    #                                 amount=1, price=1000,
+    #                                 channel='ftp', deadline=(timezone.now() + timedelta(hours=1)))
+    # check_not_initiated()
+    # check_not_finished()
+    # empty_recepcion_HTTPless()
+
     return JsonResponse({'test': 'working'}, safe=False, status=200)

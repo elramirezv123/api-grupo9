@@ -85,9 +85,9 @@ WSGI_APPLICATION = 'api_config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': "dbg9",
-        # 'USER': "postgres",
-        'PASSWORD': None,
+        'NAME': "apidb",
+        'USER': "grupo9",
+        'PASSWORD': "password",
         'HOST': "localhost",
         'PORT': 5432
     }
@@ -96,8 +96,8 @@ DATABASES = {
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-#         'NAME': "apidb",
-#         'USER': "grupo9",
+#         'NAME': "dbg9",
+#         'USER': "ale",
 #         'PASSWORD': "password",
 #         'HOST': "localhost",
 #         'PORT': 5432

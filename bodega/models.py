@@ -28,21 +28,8 @@ class Ingredient(models.Model):
     for_batch = models.DecimalField(decimal_places=2, max_digits=6)
     volume_in_store = models.IntegerField()
 
-
-
-class Request(models.Model):
-    store_destination_id = models.CharField(max_length=255)
-    sku_id = models.CharField(max_length=255)
-    amount = models.CharField(max_length=255)
-    group = models.IntegerField(null=True)
-    state = models.CharField(max_length=255, default="processing")
-    accepted = models.BooleanField(default=False)
-    dispatched = models.BooleanField(default=False)
-    deadline = models.DateField(null=True)
-
     def __str__(self):
-        """A string representation of the model."""
-        return str(self.sku_id) + str(self.amount)
+        return "{}".format(self.sku_ingredient.sku)
 
 
 class PurchaseOrder(models.Model):
@@ -51,11 +38,12 @@ class PurchaseOrder(models.Model):
     client = models.CharField(max_length=255)
     provider = models.CharField(max_length=255)
     amount = models.IntegerField()
+    sended = models.IntegerField(default=0)
     price = models.IntegerField()
     state = models.CharField(default="creada", max_length=255)  #creada, aceptada, terminada, vencida
     channel = models.CharField(max_length=255)
-    deadline = models.DateTimeField()  #maximo tiempo de espera
-    finished = models.BooleanField(default=True)
+    deadline = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
 
 class File(models.Model):
     filename = models.CharField(max_length=255)

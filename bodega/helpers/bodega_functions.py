@@ -20,7 +20,7 @@ def get_products_with_sku(almacenId, sku):
     hash = hashQuery("GET"+almacenId+str(sku))
     headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
     response = requests.get(
-        apiURL + "stock?almacenId={}&sku={}".format(almacenId, sku), headers=headers)
+        apiURL + "stock?almacenId={}&sku={}&limit=200".format(almacenId, sku), headers=headers)
     return response.json()
 
 
@@ -48,7 +48,6 @@ def move_product_inter_almacen(productId, almacenId):
     headers["Authorization"] = 'INTEGRACION grupo9:{}'.format(hash)
     body = {"productoId": productId, "almacenId": almacenId}
     response = requests.post(apiURL + "moveStock", headers=headers, json=body)
-    print(response.json())
     return response.json()
 
 
