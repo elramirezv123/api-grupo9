@@ -4,7 +4,7 @@ from bodega.models import Product, Ingredient, PurchaseOrder
 from bodega.helpers.bodega_functions import get_skus_with_stock, get_almacenes, get_products_with_sku, send_product
 from bodega.helpers.bodega_functions import make_a_product, move_product_inter_almacen, move_product_to_another_group
 from bodega.helpers.oc_functions import newOc, updateOC, getOc
-from bodega.helpers.utils import toMiliseconds
+from bodega.helpers.utils import toMiliseconds, logger
 import requests, json, os, time, random, datetime, pytz, math
 
 PRODUCTS_JSON_PATH = os.path.abspath(os.path.join(
@@ -56,8 +56,7 @@ def get_sku_stock_extern(group_number, sku):
     try:
         response = requests.get("http://tuerca{}.ing.puc.cl/inventories".format(group_number))
         response = json.loads(response.text)
-        inventories[group_number] = response
-        #print("Response1:", response, type(response))
+        print(response)
         if len(response) > 0:
             for product in response:
                 gotcha = product.get("sku", False)
@@ -76,6 +75,7 @@ def get_sku_stock_extern(group_number, sku):
 def send_oc(group_number, product, quantity):
     new_order = newOc(id_grupos['9'], id_grupos[group_number], product.sku, 1440, quantity, product.price, "b2b")
     deadline = new_order["fechaEntrega"].replace("T", " ").replace("Z","")
+    deadline = datetime.datetime.strptime(deadline, '%Y-%m-%d %H:%M:%S.%f').replace(tzinfo=pytz.UTC)
     new = PurchaseOrder.objects.create(oc_id=new_order["_id"], sku=product.sku, client=id_grupos["9"], provider=id_grupos[group_number],
                             amount=quantity, price=new_order["precioUnitario"], channel="b2b", deadline=deadline)
     new.save()
@@ -204,6 +204,7 @@ def send_order_another_group(order_id, almacenId):
 
 
 def create_base_products():
+    logger('create_base_products', 'Llamando a función')
     _, inventario = get_inventory()
     for sku in sku_products:
         if inventario.get(str(sku), 0) <= 30:
@@ -216,6 +217,7 @@ def create_base_products():
 
 
 def create_middle_products(skus=[]):
+    logger('create_middle_products', 'Llamando a función')
     _, inventario = get_inventory()
     if not skus:
         skus = minimum_stock
@@ -237,20 +239,30 @@ def create_middle_products(skus=[]):
 
 
 def get_base_products():
+    logger('get_base_products', 'Llamando a función')
     _, inventario = get_inventory()
-    for sku, cantidad in base_minimum_stock.items():
+    for sku in base_minimum_stock:
         if inventario.get(str(sku), 0) < 30:
             product = Product.objects.get(sku=sku)
             productors = product.productors.split(",")
-            choice = random.choice([1,2])
-            if choice % 2 == 0:
-                productors.reverse()
+            random.shuffle(productors)
+            counter = 0
+            productors = ["13"]
             for group in productors:
                 if group != "9":
-                    available = get_sku_stock_extern(group, sku)
+                    available = get_sku_stock_extern(group, str(sku))
                     if available:
-                        to_order = int(min(product.batch, available))
+                        batch = product.batch 
+                        if batch == 1:
+                            batch*=3
+                        to_order = int(min(batch, available))
                         response = send_oc(group, product, to_order)
+                        response = json.loads(response.text)
+                        if response.get('aceptado'):
+                            counter+= 1
+                        if counter >= 3:
+                            break
+
 
 
 

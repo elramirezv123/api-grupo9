@@ -88,6 +88,19 @@ def orders(request):
 
 
 def test(request):
+    return JsonResponse({'test': 'working'}, safe=False, status=200)
+
+def watch_server_view(request):
+    watch_server()
+    return JsonResponse({'watch_server_view': 'working'}, safe=False, status=200)
+
+def check_not_initiated_view(request):
+    check_not_initiated()
+    return JsonResponse({'check_not_initiated_view': 'working'}, safe=False, status=200)
+
+def check_not_finished_view(request):
+    check_not_finished()
+    return JsonResponse({'check_not_finished_view': 'working'}, safe=False, status=200)
     # sku = "1002"
     # cantidad = 1
 
@@ -130,4 +143,4 @@ def test(request):
     # check_not_finished()
     # empty_recepcion_HTTPless()
 
-    return JsonResponse({'test': 'working'}, safe=False, status=200)
+    
