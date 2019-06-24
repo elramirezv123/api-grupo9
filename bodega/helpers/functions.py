@@ -102,7 +102,7 @@ def get_inventories(view=False):
     if not view:
         return [{"sku": sku, "total": cantidad, "nombre": Product.objects.get(sku=sku).name} for sku,cantidad in _.items()]
     else:
-        return [{"sku": sku, "total": int(cantidad*0.5), "nombre": Product.objects.get(sku=sku).name} for sku,cantidad in _.items()]
+        return [{"sku": sku, "total": int(cantidad*0.5), "nombre": Product.objects.get(sku=sku).name} for sku,cantidad in _.items() if cantidad >= 5]
 
 
 def move_products(products, almacenId):
