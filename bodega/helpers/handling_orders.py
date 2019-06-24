@@ -32,6 +32,7 @@ def send_to_profe(oc): # Esta funcion debiera ser llamada con esa libreria que p
 
 
 def finish_oc(oc):
+    logger('finish_oc', 'OC_SKU: {} AMOUNT: {}'.format(oc.sku, oc.amount))
     products = get_products_with_sku(almacenes['cocina'], oc.sku)
     i = oc.sended
     if oc.sended < oc.amount:
@@ -52,6 +53,7 @@ def finish_oc(oc):
 
 def check_not_finished():
     not_finished_ocs = PurchaseOrder.objects.filter(state='iniciada', channel='ftp', deadline__gte=timezone.now()).order_by('created_at')
+    logger('check_not_finished', 'Cantidad not finished: {}'.format(len(not_finished_ocs)))
     if not_finished_ocs:
         stock_almacenes, stock = get_inventory()
         for oc in not_finished_ocs:
@@ -66,6 +68,7 @@ def check_not_initiated():
     para intentar producir los productos de nivel 10k, 20k y 30k.
     """
     not_iniciated_ocs = PurchaseOrder.objects.filter(state='creada', channel='ftp').order_by('created_at') # Filtramos las ocs que no han sido atendidas aun
+    logger('check_not_initiated', 'not_initiated_amount: {}'.format(len(not_iniciated_ocs)))
     if not_iniciated_ocs:
         _, stock = get_inventory()
         for oc in not_iniciated_ocs:
@@ -113,6 +116,7 @@ def watch_server():
     HOST_PORT = 22
     conn_opts = pysftp.CnOpts()
     conn_opts.hostkeys = None
+    logger('watch_server', 'Llamando a watch_server')
     with pysftp.Connection(host=HOST_NAME, username=USER_NAME, password=USER_PASSWORD, port=HOST_PORT, cnopts=conn_opts) as sftp:
         print("Conexión establecida con servidor STFP!")
         sftp.cwd('/pedidos')

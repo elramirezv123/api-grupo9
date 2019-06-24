@@ -4,7 +4,7 @@ from bodega.models import Product, Ingredient, PurchaseOrder
 from bodega.helpers.bodega_functions import get_skus_with_stock, get_almacenes, get_products_with_sku, send_product
 from bodega.helpers.bodega_functions import make_a_product, move_product_inter_almacen, move_product_to_another_group
 from bodega.helpers.oc_functions import newOc, updateOC, getOc
-from bodega.helpers.utils import toMiliseconds
+from bodega.helpers.utils import toMiliseconds, logger
 import requests, json, os, time, random, datetime, pytz, math
 
 PRODUCTS_JSON_PATH = os.path.abspath(os.path.join(
@@ -204,6 +204,7 @@ def send_order_another_group(order_id, almacenId):
 
 
 def create_base_products():
+    logger('create_base_products', 'Llamando a función')
     _, inventario = get_inventory()
     for sku in sku_products:
         if inventario.get(str(sku), 0) <= 30:
@@ -216,6 +217,7 @@ def create_base_products():
 
 
 def create_middle_products(skus=[]):
+    logger('create_middle_products', 'Llamando a función')
     _, inventario = get_inventory()
     if not skus:
         skus = minimum_stock
@@ -237,6 +239,7 @@ def create_middle_products(skus=[]):
 
 
 def get_base_products():
+    logger('get_base_products', 'Llamando a función')
     _, inventario = get_inventory()
     for sku in base_minimum_stock:
         if inventario.get(str(sku), 0) < 30:
