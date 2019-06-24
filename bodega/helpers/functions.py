@@ -56,8 +56,7 @@ def get_sku_stock_extern(group_number, sku):
     try:
         response = requests.get("http://tuerca{}.ing.puc.cl/inventories".format(group_number))
         response = json.loads(response.text)
-        inventories[group_number] = response
-        #print("Response1:", response, type(response))
+        print(response)
         if len(response) > 0:
             for product in response:
                 gotcha = product.get("sku", False)
@@ -76,6 +75,7 @@ def get_sku_stock_extern(group_number, sku):
 def send_oc(group_number, product, quantity):
     new_order = newOc(id_grupos['9'], id_grupos[group_number], product.sku, 1440, quantity, product.price, "b2b")
     deadline = new_order["fechaEntrega"].replace("T", " ").replace("Z","")
+    deadline = datetime.datetime.strptime(deadline, '%Y-%m-%d %H:%M:%S.%f').replace(tzinfo=pytz.UTC)
     new = PurchaseOrder.objects.create(oc_id=new_order["_id"], sku=product.sku, client=id_grupos["9"], provider=id_grupos[group_number],
                             amount=quantity, price=new_order["precioUnitario"], channel="b2b", deadline=deadline)
     new.save()
@@ -238,19 +238,28 @@ def create_middle_products(skus=[]):
 
 def get_base_products():
     _, inventario = get_inventory()
-    for sku, cantidad in base_minimum_stock.items():
+    for sku in base_minimum_stock:
         if inventario.get(str(sku), 0) < 30:
             product = Product.objects.get(sku=sku)
             productors = product.productors.split(",")
-            choice = random.choice([1,2])
-            if choice % 2 == 0:
-                productors.reverse()
+            random.shuffle(productors)
+            counter = 0
+            productors = ["13"]
             for group in productors:
                 if group != "9":
-                    available = get_sku_stock_extern(group, sku)
+                    available = get_sku_stock_extern(group, str(sku))
                     if available:
-                        to_order = int(min(product.batch, available))
+                        batch = product.batch 
+                        if batch == 1:
+                            batch*=3
+                        to_order = int(min(batch, available))
                         response = send_oc(group, product, to_order)
+                        response = json.loads(response.text)
+                        if response.get('aceptado'):
+                            counter+= 1
+                        if counter >= 3:
+                            break
+
 
 
 

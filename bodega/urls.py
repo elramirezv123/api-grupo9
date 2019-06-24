@@ -17,6 +17,9 @@ urls = [
     path('inventories', api_views.inventories),
     path('orders', api_views.orders),
     url(r'orders/(?P<cantidad>\D+)',api_views.orders),
+    path('watch_server', api_views.watch_server_view),
+    path('check_not_initiated', api_views.check_not_initiated_view),
+    path('check_not_finished', api_views.check_not_finished_view),
     path('test', api_views.test),
 
 ]

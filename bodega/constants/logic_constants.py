@@ -34,18 +34,9 @@ minimum_stock = [
     1407
 ]
 
-base_minimum_stock = {
-"1003": 50,
-"1005": 50,
-"1006": 50,
-"1007": 50,
-"1011": 50,
-"1012": 50,
-"1014": 50,
-"1015": 50
-}
+base_minimum_stock = [ 1003, 1005, 1006, 1007, 1011, 1012, 1014, 1015 ]
+# base_minimum_stock = [1001]
 
-# base_minimum_stock = {}
 
 #{sku:[suma, numero_items]}
 
