@@ -195,7 +195,8 @@ def send_order_another_group(order_id, almacenId):
     Chequear si es que podemos moverlo
     para no completar a medias una orden
     '''
-    make_space_in_almacen('despacho', random.choice(['libre2', 'libre1']), int(amount), [sku])
+    if not check_space(amount, 'despacho'):
+        make_space_in_almacen('despacho', random.choice(['libre2', 'libre1']), int(amount), [sku])
     productos_movidos = send_to_somewhere(sku, int(amount), almacenes["despacho"])
     productos_despacho = get_products_with_sku(almacenes["despacho"], sku)
     for producto in productos_despacho:
