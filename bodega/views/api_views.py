@@ -88,6 +88,7 @@ def orders(request):
 
 
 def test(request):
+    get_base_products()
     return JsonResponse({'test': 'working'}, safe=False, status=200)
 
 def watch_server_view(request):
