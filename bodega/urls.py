@@ -33,4 +33,5 @@ urlpatterns = [*router.urls,
             path('preparar', control_views.preparar),
             path('ftp', control_views.ftp_info),
             path('logs', control_views.show_logs),
-            path('b2b', control_views.show_b2b_logs)]
+            path('b2b', control_views.show_b2b_logs),
+            path('ask/<group>/<sku>', control_views.ask_group)]
