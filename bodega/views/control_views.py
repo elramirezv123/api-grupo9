@@ -1,7 +1,7 @@
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import render
 from django import template
-from bodega.helpers.functions import get_almacenes, get_inventory, make_a_product, make_space_in_almacen, send_to_somewhere
+from bodega.helpers.functions import get_almacenes, get_inventory, make_a_product, make_space_in_almacen, send_to_somewhere, empty_pulmon, empty_recepcion_HTTPless
 from bodega.models import Product, Ingredient, PurchaseOrder, Log
 from bodega.constants.config import prod, almacenes
 from django.shortcuts import redirect
@@ -40,13 +40,13 @@ def ftp_info(request):
 
 
 def show_b2b_logs(request):
-    logs = Log.objects.filter(caller='b2b')
+    logs = Log.objects.filter(caller='b2b').order_by('created_at').reverse()
     logs_info = map(lambda x: {"id": x.id, "caller": x.caller, "date": x.created_at.strftime("%Y/%m/%d, %H:%M:%S"), "comment": x.comment}, logs)
     print(logs_info)
     return render(request, 'b2b.html', { "logs": logs_info})
 
 def show_logs(request):
-    logs = Log.objects.all()
+    logs = Log.objects.all().order_by('created_at').reverse()
     logs_info = map(lambda x: {"id": x.id, "caller": x.caller, "date": x.created_at.strftime("%Y/%m/%d, %H:%M:%S"), "comment": x.comment}, filter(lambda x: x.caller != 'b2b', logs))
     return render(request, 'logs.html', { "logs": logs_info})
     
@@ -88,10 +88,10 @@ def vaciar(request):
     make_space_in_almacen("despacho", "libre1", 177)
     return HttpResponseRedirect('inventario')
 
-def empty_reception(request):
+def empty_reception_view(request):
     # if this is a POST request we need to process the form data
     # create a form instance and populate it with data from the request:
-    if request.method == 'POST':
+    '''if request.method == 'POST':
         # create a form instance and populate it with data from the request:
         form = EmptyReceptionForm(request.POST)
         if form.is_valid():
@@ -102,6 +102,12 @@ def empty_reception(request):
                 make_space_in_almacen("recepcion", destino, space)
             except:
                 pass
-    return HttpResponseRedirect('almacenes')
+    return HttpResponseRedirect('almacenes')'''
+    empty_recepcion_HTTPless()
+    return JsonResponse({'empty_reception': 'working'}, safe=False, status=200)
+
+def empty_pulmon_view(request):
+    empty_pulmon()
+    return JsonResponse({'empty_pulmon': 'working'}, safe=False, status=200)
 
 # Leave the rest of the views (detail, results, vote) unchanged
