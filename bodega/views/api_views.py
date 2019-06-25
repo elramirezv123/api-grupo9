@@ -10,7 +10,7 @@ from bodega.models import Product, Ingredient, File, PurchaseOrder
 from bodega.helpers.functions import *
 from bodega.helpers.utils import logger, validate_post_body
 from bodega.helpers.bodega_functions import get_skus_with_stock
-from bodega.helpers.oc_functions import getOc, declineOc, receiveOc, newOc
+from bodega.helpers.oc_functions import getOc, declineOc, receiveOc, newOc, anular_vencidas
 from bodega.helpers.final_products_functions import has_ingredients
 
 # https://www.webforefront.com/django/accessurlparamstemplates.html
@@ -96,7 +96,7 @@ def orders(request):
 
 
 def test(request):
-    empty_pulmon()
+    anular_vencidas()
     return JsonResponse({'test': 'working'}, safe=False, status=200)
 
 def watch_server_view(request):
