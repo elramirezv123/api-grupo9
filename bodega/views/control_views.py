@@ -1,7 +1,7 @@
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import render
 from django import template
-from bodega.helpers.functions import get_almacenes, get_inventory, make_a_product, make_space_in_almacen, send_to_somewhere, empty_pulmon, empty_recepcion_HTTPless
+from bodega.helpers.functions import get_almacenes, get_inventory, make_a_product, make_space_in_almacen, send_to_somewhere, empty_pulmon, empty_recepcion_HTTPless, get_sku
 from bodega.models import Product, Ingredient, PurchaseOrder, Log
 from bodega.constants.config import prod, almacenes
 from django.shortcuts import redirect
@@ -109,5 +109,11 @@ def empty_reception_view(request):
 def empty_pulmon_view(request):
     empty_pulmon()
     return JsonResponse({'empty_pulmon': 'working'}, safe=False, status=200)
+
+def ask_group(request, group, sku):
+    group = int(group)
+    sku = int(sku)
+    get_sku(sku, group)
+    return JsonResponse({'get_sku': 'working'}, safe=False, status=200)
 
 # Leave the rest of the views (detail, results, vote) unchanged
