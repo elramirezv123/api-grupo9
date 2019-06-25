@@ -40,13 +40,13 @@ def ftp_info(request):
 
 
 def show_b2b_logs(request):
-    logs = Log.objects.filter(caller='b2b')
+    logs = Log.objects.filter(caller='b2b').order_by('created_at').reverse()
     logs_info = map(lambda x: {"id": x.id, "caller": x.caller, "date": x.created_at.strftime("%Y/%m/%d, %H:%M:%S"), "comment": x.comment}, logs)
     print(logs_info)
     return render(request, 'b2b.html', { "logs": logs_info})
 
 def show_logs(request):
-    logs = Log.objects.all()
+    logs = Log.objects.all().order_by('created_at').reverse()
     logs_info = map(lambda x: {"id": x.id, "caller": x.caller, "date": x.created_at.strftime("%Y/%m/%d, %H:%M:%S"), "comment": x.comment}, filter(lambda x: x.caller != 'b2b', logs))
     return render(request, 'logs.html', { "logs": logs_info})
     
