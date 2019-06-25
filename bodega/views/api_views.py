@@ -54,17 +54,24 @@ def orders(request):
     req_sku = req_body['sku']
     req_oc = req_body['oc']
     order = getOc(req_oc)[0]
+    group_number = request.headers.get('group') if request.headers.get('group') else 'NoHeader'
     try:
         req_sku = int(req_sku)
     except:
         declineOc(req_oc, "SKU NO SE PUEDE TRANSFORMAR A ENTERO (INT)")
         return JsonResponse({'error': "SKU NO SE PUEDE TRANSFORMAR A ENTERO (INT)"}, safe=False, status=400)
-    stock, sku_stock_dict = get_inventory()
-    lista = list(map(lambda x: int(x), sku_stock_dict))
-    if (req_sku not in lista) or (int(sku_stock_dict[str(req_sku)]) < int(req_body['cantidad'])) or (has_ingredients(req_sku)):
-        declineOc(req_oc, "We don't have stock of that sku. Sorry")
-        logger('b2b', "SKU: {} -> RECHAZADO".format(req.sku))
-        return JsonResponse({'error': "We don't have stock of that sku. Sorry"}, safe=False, status=400)
+    inventories = get_inventories(True)
+    related_sku = list(filter(lambda x: x['sku'] == str(req_sku), inventories))
+
+    if (related_sku): # Si tenemos de ese sku
+        if (related_sku[0]['total'] < int(req_body['cantidad']) or has_ingredients(related_sku[0]['sku'])): # Si no tenemos en la cantidad que nos piden
+            declineOc(req_oc, "We don't have stock of that sku. Sorry")
+            logger('b2b', "SKU: {} CANTIDAD: {} GRUPO: {}-> RECHAZADO (Sin cantidad)".format(req_sku, req_body['cantidad'], group_number))
+            return JsonResponse({'error': "We don't have stock of that sku. Sorry"}, safe=False, status=400)
+    else:
+        logger('b2b', "SKU: {} GRUPO: {} -> RECHAZADO (No tenemos de ese sku.)".format(req_sku, group_number))
+        return JsonResponse({'error': "We don't have that sku. Sorry"}, safe=False, status=400)
+
     if validate_post_body(req_body):
         new = PurchaseOrder.objects.create(oc_id=order['_id'], sku=order['sku'], client=order['cliente'], provider=order['proveedor'],
                             amount=order['cantidad'], price=order['precioUnitario'], channel=order['canal'], deadline=order['fechaEntrega'])
@@ -79,7 +86,6 @@ def orders(request):
             'aceptado': True,
             'despachado': True
         }
-        group_number = request.headers.get('group') if request.headers.get('group') else 'NoHeader'
         logger('b2b', "SKU: {} CANTIDAD: {} GRUPO: {} -> ACEPTADO".format(order['sku'], order['cantidad'], group_number))
         return JsonResponse(request_response, safe=False, status=201)
     else:
