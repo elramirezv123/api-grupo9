@@ -80,7 +80,7 @@ def orders(request):
             'despachado': True
         }
         group_number = request.headers.get('group') if request.headers.get('group') else 'NoHeader'
-        logger('b2b', "SKU: {} CANTIDAD: {} GRUPO: {} -> ACEPTADO".format(order['sku'], order['cantidad'], order['cantidad'], group_number))
+        logger('b2b', "SKU: {} CANTIDAD: {} GRUPO: {} -> ACEPTADO".format(order['sku'], order['cantidad'], group_number))
         return JsonResponse(request_response, safe=False, status=201)
     else:
         declineOc(req_oc, 'Bad body format')
