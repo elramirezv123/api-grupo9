@@ -62,9 +62,8 @@ def orders(request):
         return JsonResponse({'error': "SKU NO SE PUEDE TRANSFORMAR A ENTERO (INT)"}, safe=False, status=400)
     inventories = get_inventories(True)
     related_sku = list(filter(lambda x: x['sku'] == str(req_sku), inventories))
-
     if (related_sku): # Si tenemos de ese sku
-        if (related_sku[0]['total'] < int(req_body['cantidad']) or has_ingredients(related_sku[0]['sku'])): # Si no tenemos en la cantidad que nos piden
+        if ((related_sku[0]['total'] < int(req_body['cantidad'])) or has_ingredients(related_sku[0]['sku'])): # Si no tenemos en la cantidad que nos piden
             declineOc(req_oc, "We don't have stock of that sku. Sorry")
             logger('b2b', "SKU: {} CANTIDAD: {} GRUPO: {}-> RECHAZADO (Sin cantidad)".format(req_sku, req_body['cantidad'], group_number))
             return JsonResponse({'error': "We don't have stock of that sku. Sorry"}, safe=False, status=400)
