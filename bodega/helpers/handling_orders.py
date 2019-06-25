@@ -1,6 +1,7 @@
 import pysftp
 import xml.etree.ElementTree as ET
 import json
+import datetime
 import requests, math, pytz
 from collections import defaultdict
 from bodega.models import File, PurchaseOrder, Ingredient, Product
@@ -145,6 +146,6 @@ def watch_server():
                                     new_oc, oc_created = PurchaseOrder.objects.get_or_create(oc_id=response["_id"], sku=response['sku'], 
                                                                         client=response['cliente'], provider=response['proveedor'],
                                                                         amount=response['cantidad'], price=response["precioUnitario"],
-                                                                        channel=response['canal'], deadline=deadline)
+                                                                        channel=response['canal'], deadline=deadline, created_at=datetime.datetime.now().replace(tzinfo=pytz.UTC))
 
     

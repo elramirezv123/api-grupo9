@@ -32,10 +32,10 @@ def inventory_info(request):
     return render(request, 'inventory.html', context)
 
 def ftp_info(request):
-    ocs = PurchaseOrder.objects.filter(finished=False, channel='ftp')
+    ocs = PurchaseOrder.objects.filter(channel='ftp')
     ocs_info = {}
     for oc in ocs:
-        ocs_info[oc.oc_id] = {"sku": oc.sku, "client": oc.client, "provider": oc.provider, "amount": oc.amount, "deadline": oc.deadline}
+        ocs_info[oc.oc_id] = {"sku": oc.sku, "client": oc.client, "provider": oc.provider, "amount": oc.amount, "deadline": oc.deadline, "created_at": oc.created_at}
     return render(request, 'ftp.html', {'ocs': ocs_info})
 
 def show_logs(request):
