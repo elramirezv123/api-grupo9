@@ -207,7 +207,7 @@ def create_base_products():
     logger('create_base_products', 'Llamando a función')
     _, inventario = get_inventory()
     for sku in sku_products:
-        if inventario.get(str(sku), 0) <= 30:
+        if inventario.get(str(sku), 0) <= 35:
             producto = Product.objects.get(sku=sku)
             cantidad = producto.batch
             if cantidad == 1: # Esto es para el camarón que su batch es de 1, pero dura 720 horas.
@@ -242,7 +242,7 @@ def get_base_products():
     logger('get_base_products', 'Llamando a función')
     _, inventario = get_inventory()
     for sku in base_minimum_stock:
-        if inventario.get(str(sku), 0) < 30:
+        if inventario.get(str(sku), 0) < 35:
             product = Product.objects.get(sku=sku)
             productors = product.productors.split(",")
             random.shuffle(productors)
