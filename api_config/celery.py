@@ -24,7 +24,7 @@ app.conf.beat_schedule = {
     },
     'check-not-initiated': {  
         'task': 'check-not-initiated',  
-        'schedule': crontab(minute='*/15'),   
+        'schedule': crontab(minute='*/14'),   
     },
     'create-base-products': {  
         'task': 'base-products',  
