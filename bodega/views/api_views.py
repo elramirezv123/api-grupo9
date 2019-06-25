@@ -69,6 +69,7 @@ def orders(request):
             logger('b2b', "SKU: {} CANTIDAD: {} GRUPO: {}-> RECHAZADO (Sin cantidad)".format(req_sku, req_body['cantidad'], group_number))
             return JsonResponse({'error': "We don't have stock of that sku. Sorry"}, safe=False, status=400)
     else:
+        declineOc(req_oc, "We don't have stock of that sku. Sorry")
         logger('b2b', "SKU: {} GRUPO: {} -> RECHAZADO (No tenemos de ese sku.)".format(req_sku, group_number))
         return JsonResponse({'error': "We don't have that sku. Sorry"}, safe=False, status=400)
 
