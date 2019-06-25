@@ -139,7 +139,7 @@ def has_ingredients(sku):
     Retorna False si es que el sku no tiene ingredientes
     en otro caso, retorna los ingredientes.
     """
-    ingredients = Ingredient.objects.filter(sku_product_id=sku)
+    ingredients = Ingredient.objects.filter(sku_product_id=int(sku))
     if len(ingredients) > 0:
         return ingredients
     return False
