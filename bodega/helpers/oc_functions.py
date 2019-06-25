@@ -7,6 +7,8 @@ import requests
 import json
 import xml.etree.ElementTree as ET
 import pysftp
+import datetime
+import pytz
 
 
 def deleteOc(ocId, reason):
@@ -57,3 +59,9 @@ def updateOC(idOc, state):
     order = PurchaseOrder.objects.filter(oc_id=idOc)
     order.update(state=state)
 
+def anular_vencidas():
+    ftp_orders = PurchaseOrder.objects.filter(channel='b2b')
+    now = datetime.datetime.now().replace(tzinfo=pytz.UTC)
+    for order in ftp_orders:
+        if order.deadline < now:
+            deleteOc(order.oc_id, 'Orden de compra vencida')

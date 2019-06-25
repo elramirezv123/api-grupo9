@@ -6,7 +6,7 @@ import requests, math, pytz
 from collections import defaultdict
 from bodega.models import File, PurchaseOrder, Ingredient, Product
 from bodega.helpers.utils import logger
-from bodega.helpers.oc_functions import getOc, receiveOc
+from bodega.helpers.oc_functions import getOc, receiveOc, anular_vencidas
 from bodega.helpers.bodega_functions import *
 from bodega.constants.config import ocURL, almacenes
 from .utils import hashQuery
@@ -53,6 +53,7 @@ def finish_oc(oc):
 
 
 def check_not_finished():
+    # anular_vencidas()
     not_finished_ocs = PurchaseOrder.objects.filter(state='iniciada', channel='ftp', deadline__gte=timezone.now()).order_by('created_at')
     logger('check_not_finished', 'Cantidad not finished: {}'.format(len(not_finished_ocs)))
     if not_finished_ocs:
