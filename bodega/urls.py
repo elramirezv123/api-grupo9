@@ -32,4 +32,5 @@ urlpatterns = [*router.urls,
             path('preparar', control_views.preparar),
             path('vaciar', control_views.vaciar),
             path('ftp', control_views.ftp_info),
-            path('logs', control_views.show_logs)]
+            path('logs', control_views.show_logs),
+            path('b2b', control_views.show_b2b_logs)]

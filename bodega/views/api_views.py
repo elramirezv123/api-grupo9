@@ -63,6 +63,7 @@ def orders(request):
     lista = list(map(lambda x: int(x), sku_stock_dict))
     if (req_sku not in lista) or (int(sku_stock_dict[str(req_sku)]) < int(req_body['cantidad'])) or (has_ingredients(req_sku)):
         declineOc(req_oc, "We don't have stock of that sku. Sorry")
+        logger('b2b', "SKU: {} -> RECHAZADO".format(req.sku))
         return JsonResponse({'error': "We don't have stock of that sku. Sorry"}, safe=False, status=400)
     if validate_post_body(req_body):
         new = PurchaseOrder.objects.create(oc_id=order['_id'], sku=order['sku'], client=order['cliente'], provider=order['proveedor'],
@@ -78,7 +79,7 @@ def orders(request):
             'aceptado': True,
             'despachado': True
         }
-
+        logger('b2b', "SKU: {} CANTIDAD: {} -> RECHAZADO".format(order['sku'], order['cantidad']))
         return JsonResponse(request_response, safe=False, status=201)
     else:
         declineOc(req_oc, 'Bad body format')
