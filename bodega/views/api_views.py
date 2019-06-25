@@ -11,7 +11,7 @@ from bodega.helpers.functions import *
 from bodega.helpers.utils import logger, validate_post_body
 from bodega.helpers.bodega_functions import get_skus_with_stock
 from bodega.helpers.oc_functions import getOc, declineOc, receiveOc, newOc
-from bodega.helpers.final_products_functions import try_to_produce_highlevel, try_to_produce_highlvl
+from bodega.helpers.final_products_functions import has_ingredients
 
 # https://www.webforefront.com/django/accessurlparamstemplates.html
 
@@ -61,7 +61,7 @@ def orders(request):
         return JsonResponse({'error': "SKU NO SE PUEDE TRANSFORMAR A ENTERO (INT)"}, safe=False, status=400)
     stock, sku_stock_dict = get_inventory()
     lista = list(map(lambda x: int(x), sku_stock_dict))
-    if req_sku not in lista or int(sku_stock_dict[str(req_sku)]) < int(req_body['cantidad']):
+    if (req_sku not in lista) or (int(sku_stock_dict[str(req_sku)]) < int(req_body['cantidad'])) or (has_ingredients(req_sku)):
         declineOc(req_oc, "We don't have stock of that sku. Sorry")
         return JsonResponse({'error': "We don't have stock of that sku. Sorry"}, safe=False, status=400)
     if validate_post_body(req_body):
