@@ -147,5 +147,3 @@ def watch_server():
                                                                         client=response['cliente'], provider=response['proveedor'],
                                                                         amount=response['cantidad'], price=response["precioUnitario"],
                                                                         channel=response['canal'], deadline=deadline, created_at=datetime.datetime.now().replace(tzinfo=pytz.UTC))
-
-    

@@ -96,7 +96,7 @@ def orders(request):
 
 
 def test(request):
-    get_base_products()
+    empty_pulmon()
     return JsonResponse({'test': 'working'}, safe=False, status=200)
 
 def watch_server_view(request):
