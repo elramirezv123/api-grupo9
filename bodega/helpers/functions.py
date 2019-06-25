@@ -56,7 +56,6 @@ def get_sku_stock_extern(group_number, sku):
     try:
         response = requests.get("http://tuerca{}.ing.puc.cl/inventories".format(group_number))
         response = json.loads(response.text)
-        print(response)
         if len(response) > 0:
             for product in response:
                 gotcha = product.get("sku", False)
@@ -248,7 +247,6 @@ def get_base_products():
             productors = product.productors.split(",")
             random.shuffle(productors)
             counter = 0
-            productors = ["13"]
             for group in productors:
                 if group != "9":
                     available = get_sku_stock_extern(group, str(sku))
@@ -257,14 +255,29 @@ def get_base_products():
                         if batch == 1:
                             batch*=3
                         to_order = int(min(batch, available))
-                        response = send_oc(group, product, to_order)
-                        response = json.loads(response.text)
-                        if response.get('aceptado'):
-                            counter+= 1
-                        if counter >= 3:
-                            break
+                        try:
+                            response = send_oc(group, product, to_order)
+                            response = json.loads(response.text)
+                            print(response)
+                            if response.get('aceptado'):
+                                counter+= 1
+                                print("el contador es ", counter)
+                            if counter >= 3:
+                                break
+                        except Exception as err:
+                            print(err)
 
 
+def get_sku(sku, group_number):
+    product = Product.objects.get(sku=sku)
+    available = get_sku_stock_extern(group_number, str(sku))
+    if available:
+        batch = product.batch 
+        if batch == 1:
+            batch*=3
+        to_order = int(min(batch, available))
+        response = send_oc(group_number, product, to_order)
+        response = json.loads(response.text)
 
 
 def check_space(quantity, almacenName):
