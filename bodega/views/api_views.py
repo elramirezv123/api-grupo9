@@ -96,7 +96,13 @@ def orders(request):
 
 
 def test(request):
-    anular_vencidas()
+    req_body = get_request_body(request)
+    cantidad = int(req_body['cantidad'])
+    grupo = int(req_body['grupo'])
+    sku = int(req_body['sku'])
+    p = Product.objects.get(sku=sku)
+    r = send_oc(str(grupo), p, cantidad)
+    print(r.json())
     return JsonResponse({'test': 'working'}, safe=False, status=200)
 
 def watch_server_view(request):
