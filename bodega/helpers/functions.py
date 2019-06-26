@@ -212,8 +212,9 @@ def create_base_products():
             producto = Product.objects.get(sku=sku)
             cantidad = producto.batch
             if cantidad == 1: # Esto es para el camarón que su batch es de 1, pero dura 720 horas.
-                cantidad*=3
-            response = make_a_product(sku, cantidad)
+                cantidad*=2 
+                # De camaron serán 6.
+            response = make_a_product(sku, cantidad*3)
             time.sleep(1)
 
 
