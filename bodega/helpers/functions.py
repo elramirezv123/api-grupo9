@@ -101,7 +101,8 @@ def get_inventories(view=False):
     if not view:
         return [{"sku": sku, "total": cantidad, "nombre": Product.objects.get(sku=sku).name} for sku,cantidad in _.items()]
     else:
-        return [{"sku": sku, "total": min(int(cantidad*0.5), 10), "nombre": Product.objects.get(sku=sku).name} for sku,cantidad in _.items() if cantidad >= 5 and int(sku) in sku_products]
+        skus_in_cocina = [int(k) for k, v in stock['cocina'].items()]
+        return [{"sku": sku, "total": min(int(cantidad*0.5), 10), "nombre": Product.objects.get(sku=sku).name} for sku,cantidad in _.items() if cantidad >= 5 and int(sku) in sku_products and int(sku) not in skus_in_cocina]
 
 
 def move_products(products, almacenId):
@@ -118,7 +119,7 @@ def send_to_somewhere(sku, cantidad, to_almacen):
     print("cantidad que quiero mover", cantidad)
     for almacen, almacenId in almacenes.items():
         print("Estoy parado en ", almacen)
-        if almacen != "despacho" and almacenId != to_almacen:
+        if almacen not in ["despacho", "cocina"] and almacenId != to_almacen:
             products = get_products_with_sku(almacenId, sku)
             if len(products) > 0:
                 diff = len(products) - cantidad
@@ -211,8 +212,9 @@ def create_base_products():
             producto = Product.objects.get(sku=sku)
             cantidad = producto.batch
             if cantidad == 1: # Esto es para el camarón que su batch es de 1, pero dura 720 horas.
-                cantidad*=3
-            response = make_a_product(sku, cantidad)
+                cantidad*=2 
+                # De camaron serán 6.
+            response = make_a_product(sku, cantidad*3)
             time.sleep(1)
 
 
