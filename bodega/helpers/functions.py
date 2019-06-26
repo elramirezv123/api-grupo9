@@ -119,7 +119,7 @@ def send_to_somewhere(sku, cantidad, to_almacen):
     print("cantidad que quiero mover", cantidad)
     for almacen, almacenId in almacenes.items():
         print("Estoy parado en ", almacen)
-        if almacen != "despacho" and almacenId != to_almacen:
+        if almacen not in ["despacho", "cocina"] and almacenId != to_almacen:
             products = get_products_with_sku(almacenId, sku)
             if len(products) > 0:
                 diff = len(products) - cantidad
