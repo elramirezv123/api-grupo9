@@ -61,6 +61,10 @@ def check_not_finished():
         for oc in not_finished_ocs:
             stock_actual = stock_almacenes['cocina'].get(str(oc.sku), 0)
             if stock_actual > 0:
+                # space_available = check_space(space, 'despacho')
+                # if space_available < oc.amount:
+                #     make_space_in_almacen("despacho", random.choice(['libre1', 'libre2']), space_available)
+                # send_to_somewhere(str(oc.sku), oc.amount, almacenes["despacho"])    
                 finish_oc(oc)
 
 
