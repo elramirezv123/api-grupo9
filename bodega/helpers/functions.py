@@ -276,9 +276,13 @@ def get_sku(sku, group_number):
         if batch == 1:
             batch*=3
         to_order = int(min(batch, available))
-        response = send_oc(group_number, product, to_order)
-        response = json.loads(response.text)
-
+        try:
+            response = send_oc(group_number, product, to_order)
+            response = json.loads(response.text)
+            print(response)
+        except Exception as err:
+            print(err)
+    time.sleep(1)
 
 def check_space(quantity, almacenName):
     almacens = get_almacenes()
