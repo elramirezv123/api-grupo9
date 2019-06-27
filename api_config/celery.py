@@ -41,7 +41,7 @@ app.conf.beat_schedule = {
     },
     'empty-pulmon': {  
         'task': 'empty-pulmon',  
-        'schedule': crontab(minute='*/40',   
+        'schedule': crontab(minute='*/40'),   
     },
     'empty-recepcion-HTTPless': {  
         'task': 'empty-recepcion-HTTPless',  
