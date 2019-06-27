@@ -32,7 +32,7 @@ def inventory_info(request):
     return render(request, 'inventory.html', context)
 
 def ftp_info(request):
-    ocs = PurchaseOrder.objects.filter(channel='ftp').reverse()
+    ocs = PurchaseOrder.objects.filter(channel='ftp').order_by('deadline').reverse()
     ocs_info = {}
     for oc in ocs:
         ocs_info[oc.oc_id] = {"sku": oc.sku, "client": oc.client, "state": oc.state, "provider": oc.provider, "amount": oc.amount, "deadline": oc.deadline, "created_at": oc.created_at}
