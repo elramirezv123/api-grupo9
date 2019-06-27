@@ -38,14 +38,6 @@ app.conf.beat_schedule = {
         'task': 'create-mid-products',  
         'schedule': crontab(minute='*/20'), 
         'relative': True  
-    },
-    'empty-pulmon': {  
-        'task': 'empty-pulmon',  
-        'schedule': crontab(minute='*/40',   
-    },
-    'empty-recepcion-HTTPless': {  
-        'task': 'empty-recepcion-HTTPless',  
-        'schedule': crontab(minute='*/20'),   
     }
 }
 

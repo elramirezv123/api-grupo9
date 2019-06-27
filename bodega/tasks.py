@@ -1,6 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 from celery import shared_task
-from .helpers.functions import create_base_products, get_base_products, create_middle_products, empty_recepcion_HTTPless, empty_pulmon
+from .helpers.functions import create_base_products, get_base_products, create_middle_products
 from .helpers.handling_orders import watch_server, check_not_finished, check_not_initiated
 
 @shared_task(name='watch-server')
@@ -26,14 +26,6 @@ def wrapper5(*args, **kwargs):
 @shared_task(name='create-mid-products')
 def wrapper6(*args, **kwargs):
     create_middle_products()
-
-@shared_task(name='empty-pulmon')
-def wrapper7(*args, **kwargs):
-    empty_pulmon()
-
-@shared_task(name='empty-recepcion-HTTPless')
-def wrapper8(*args, **kwargs):
-    empty_recepcion_HTTPless()
 
 # @shared_task(name='empty-pulmon')
 # def wrapper5(*args, **kwargs):
