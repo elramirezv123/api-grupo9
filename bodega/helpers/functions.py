@@ -102,7 +102,7 @@ def get_inventories(view=False):
         return [{"sku": sku, "total": cantidad, "nombre": Product.objects.get(sku=sku).name} for sku,cantidad in _.items()]
     else:
         skus_in_cocina = [int(k) for k, v in stock['cocina'].items()]
-        return [{"sku": sku, "total": min(int(cantidad*0.5), 10), "nombre": Product.objects.get(sku=sku).name} for sku,cantidad in _.items() if cantidad >= 5 and int(sku) in sku_products and int(sku) not in skus_in_cocina]
+        return [{"sku": sku, "total": min(cantidad - 50, 10), "nombre": Product.objects.get(sku=sku).name} for sku,cantidad in _.items() if cantidad >= 50 and int(sku) in sku_products and int(sku) not in skus_in_cocina]
 
 
 def move_products(products, almacenId):
@@ -208,7 +208,7 @@ def create_base_products():
     logger('create_base_products', 'Llamando a función')
     _, inventario = get_inventory()
     for sku in sku_products:
-        if inventario.get(str(sku), 0) <= 35:
+        if inventario.get(str(sku), 0) <= 100:
             producto = Product.objects.get(sku=sku)
             cantidad = producto.batch
             if cantidad == 1: # Esto es para el camarón que su batch es de 1, pero dura 720 horas.
@@ -224,7 +224,7 @@ def create_middle_products(skus=[]):
     if not skus:
         skus = minimum_stock
     for sku in skus:
-        if inventario.get(str(sku), 0) < 15:
+        if inventario.get(str(sku), 0) < 30:
             ingredientes = Ingredient.objects.filter(sku_product=int(sku))
             lista_a_pedir = [True if inventario.get(str(ingre.sku_ingredient.sku), False) else False for ingre in ingredientes]
             if False not in lista_a_pedir:
@@ -244,7 +244,7 @@ def get_base_products():
     logger('get_base_products', 'Llamando a función')
     _, inventario = get_inventory()
     for sku in base_minimum_stock:
-        if inventario.get(str(sku), 0) < 35:
+        if inventario.get(str(sku), 0) < 50:
             product = Product.objects.get(sku=sku)
             productors = product.productors.split(",")
             random.shuffle(productors)
