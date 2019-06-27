@@ -297,6 +297,7 @@ def check_space(quantity, almacenName):
 
 
 def empty_recepcion_HTTPless():
+    logger('empty_recepcion_HTTPless', 'Llamando a función')
     almacens = get_almacenes()
     libres = {}
     for almacen in almacens:
@@ -329,6 +330,7 @@ def empty_recepcion_HTTPless():
 
 
 def empty_pulmon():
+    logger('empty_pulmon', 'Llamando a función')
     almacens = get_almacenes()
     libres = {}
     for almacen in almacens:

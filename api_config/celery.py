@@ -19,25 +19,33 @@ app.conf.beat_schedule = {
     },
     'check-not-finished': { 
         'task': 'check-not-finished', 
-        'schedule': crontab(minute='*/15'),
+        'schedule': crontab(minute='*/5'),
         'relative': True  
     },
     'check-not-initiated': {  
         'task': 'check-not-initiated',  
-        'schedule': crontab(minute='*/14'),   
+        'schedule': crontab(minute='*/15'),   
     },
     'create-base-products': {  
         'task': 'base-products',  
-        'schedule': crontab(minute='*/20'),   
+        'schedule': crontab(minute='*/12'),   
     },
     'get-base-products': {  
         'task': 'get-base-products',  
-        'schedule': crontab(minute='*/20'),   
+        'schedule': crontab(minute='*/10'),   
     },
     'create-mid-products': {  
         'task': 'create-mid-products',  
-        'schedule': crontab(minute='*/20'), 
+        'schedule': crontab(minute='*/12'), 
         'relative': True  
+    },
+    'empty-pulmon': {  
+        'task': 'empty-pulmon',  
+        'schedule': crontab(minute='*/40',   
+    },
+    'empty-recepcion-HTTPless': {  
+        'task': 'empty-recepcion-HTTPless',  
+        'schedule': crontab(minute='*/20'),          
     }
 }
 
