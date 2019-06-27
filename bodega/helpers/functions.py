@@ -263,6 +263,7 @@ def check_space(quantity, almacenName):
                 return True
 
 def empty_recepcion_HTTPless():
+    #log
     almacens = get_almacenes()
     libres = {}
     for almacen in almacens:
