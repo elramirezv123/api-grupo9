@@ -21,6 +21,7 @@ urls = [
     path('check_not_initiated', api_views.check_not_initiated_view),
     path('check_not_finished', api_views.check_not_finished_view),
     path('test', api_views.test),
+    path('orders2', api_views.orders2),
 
 ]
 

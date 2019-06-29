@@ -94,6 +94,46 @@ def orders(request):
 
     return JsonResponse({'error': {'type': 'Method not implemented'}}, safe=False, status=501)
 
+@csrf_exempt
+def orders2(request):
+    # hay que guardar el pedido en la base de datos
+    '''
+    Request usado:
+    {"almacenId": "asdasd", "sku": "012301", "cantidad": "10", "oc": ide}
+    '''
+    req_body = get_request_body(request)
+    req_sku = req_body['sku']
+    req_oc = req_body['oc']
+    order = getOc(req_oc)[0]
+    group_number = request.headers.get('group') if request.headers.get('group') else 'NoHeader'
+    try:
+        req_sku = int(req_sku)
+    except:
+        declineOc(req_oc, "SKU NO SE PUEDE TRANSFORMAR A ENTERO (INT)")
+        return JsonResponse({'error': "SKU NO SE PUEDE TRANSFORMAR A ENTERO (INT)"}, safe=False, status=400)
+
+    if validate_post_body(req_body):
+        new = PurchaseOrder.objects.create(oc_id=order['_id'], sku=order['sku'], client=order['cliente'], provider=order['proveedor'],
+                            amount=order['cantidad'], price=order['precioUnitario'], channel=order['canal'], deadline=order['fechaEntrega'])
+        new.save()
+        receiveOc(req_oc)
+        send_order_another_group(new.oc_id, req_body['almacenId'])
+        request_response = {
+            'sku': order['sku'],
+            'cantidad': order['cantidad'],
+            'almacenId': order['cliente'],
+            'grupoProveedor': 9,
+            'aceptado': True,
+            'despachado': True
+        }
+        logger('b2b', "SKU: {} CANTIDAD: {} GRUPO: {} -> ACEPTADO".format(order['sku'], order['cantidad'], group_number))
+        return JsonResponse(request_response, safe=False, status=201)
+    else:
+        declineOc(req_oc, 'Bad body format')
+        return JsonResponse({'error': 'Bad body format'}, safe=False, status=400)
+
+    return JsonResponse({'error': {'type': 'Method not implemented'}}, safe=False, status=501)
+
 
 def test(request):
     req_body = get_request_body(request)
