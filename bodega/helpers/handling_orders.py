@@ -54,7 +54,8 @@ def finish_oc(oc):
 
 def check_not_finished():
     # anular_vencidas()
-    not_finished_ocs = PurchaseOrder.objects.filter(state='iniciada', channel='ftp', deadline__gte=timezone.now()).order_by('created_at')
+    #solo ftp
+    not_finished_ocs = PurchaseOrder.objects.filter(state='iniciada', sku__gte=10000 ,deadline__gte=timezone.now()).order_by('created_at')
     logger('check_not_finished', 'Cantidad not finished: {}'.format(len(not_finished_ocs)))
     if not_finished_ocs:
         stock_almacenes, stock = get_inventory()
@@ -73,7 +74,7 @@ def check_not_initiated():
     Revisa las ocs que no esten finished y las recorre llamando a try_to_produce_highlevel
     para intentar producir los productos de nivel 10k, 20k y 30k.
     """
-    not_iniciated_ocs = PurchaseOrder.objects.filter(state='creada', channel='ftp').order_by('created_at') # Filtramos las ocs que no han sido atendidas aun
+    not_iniciated_ocs = PurchaseOrder.objects.filter(state='creada', sku__gte=10000).order_by('created_at') # Filtramos las ocs que no han sido atendidas aun
     logger('check_not_initiated', 'not_initiated_amount: {}'.format(len(not_iniciated_ocs)))
     if not_iniciated_ocs:
         _, stock = get_inventory()
