@@ -55,19 +55,18 @@ def finish_oc(oc):
 def check_not_finished():
     # anular_vencidas()
     #solo ftp
-    not_finished_ocs = PurchaseOrder.objects.filter(state='iniciada', deadline__gte=timezone.now()).order_by('created_at')
+    not_finished_ocs = PurchaseOrder.objects.filter(state='iniciada', sku__gte=10000 ,deadline__gte=timezone.now()).order_by('created_at')
     logger('check_not_finished', 'Cantidad not finished: {}'.format(len(not_finished_ocs)))
     if not_finished_ocs:
         stock_almacenes, stock = get_inventory()
         for oc in not_finished_ocs:
-            if oc.sku >= 10000: # ftp o b2b con sku 10000
-                stock_actual = stock_almacenes['cocina'].get(str(oc.sku), 0)
-                if stock_actual > 0:
-                    # space_available = check_space(space, 'despacho')
-                    # if space_available < oc.amount:
-                    #     make_space_in_almacen("despacho", random.choice(['libre1', 'libre2']), space_available)
-                    # send_to_somewhere(str(oc.sku), oc.amount, almacenes["despacho"])    
-                    finish_oc(oc)
+            stock_actual = stock_almacenes['cocina'].get(str(oc.sku), 0)
+            if stock_actual > 0:
+                # space_available = check_space(space, 'despacho')
+                # if space_available < oc.amount:
+                #     make_space_in_almacen("despacho", random.choice(['libre1', 'libre2']), space_available)
+                # send_to_somewhere(str(oc.sku), oc.amount, almacenes["despacho"])    
+                finish_oc(oc)
 
 
 def check_not_initiated():
@@ -75,43 +74,42 @@ def check_not_initiated():
     Revisa las ocs que no esten finished y las recorre llamando a try_to_produce_highlevel
     para intentar producir los productos de nivel 10k, 20k y 30k.
     """
-    not_iniciated_ocs = PurchaseOrder.objects.filter(state='creada').order_by('created_at') # Filtramos las ocs que no han sido atendidas aun
+    not_iniciated_ocs = PurchaseOrder.objects.filter(state='creada', sku__gte=10000).order_by('created_at') # Filtramos las ocs que no han sido atendidas aun
     logger('check_not_initiated', 'not_initiated_amount: {}'.format(len(not_iniciated_ocs)))
     if not_iniciated_ocs:
         _, stock = get_inventory()
         for oc in not_iniciated_ocs:
-            if oc.sku >= 10000:
-                if oc.deadline < timezone.now():
-                    oc.delete()
-                else:
-                    ingredients = Ingredient.objects.filter(sku_product=oc.sku) # Obtenemos que ingredientes necesita
-                    all_in_stock = True # Partimos asumiendo que tenemos todos los ingredientes en stock
-                    space = 0
-                    los_que_faltan = []
+            if oc.deadline < timezone.now():
+                oc.delete()
+            else:
+                ingredients = Ingredient.objects.filter(sku_product=oc.sku) # Obtenemos que ingredientes necesita
+                all_in_stock = True # Partimos asumiendo que tenemos todos los ingredientes en stock
+                space = 0
+                los_que_faltan = []
+                for ing in ingredients:
+                    quantity = oc.amount * ing.volume_in_store
+                    real_stock = stock.get(str(ing.sku_ingredient.sku), 0)
+                    if real_stock < quantity: # Si no tenemos lo suficiente mandamos a producir del ingrediente
+                        all_in_stock = False
+                        los_que_faltan.append(ing.sku_ingredient.sku) # Con esto se espera que la proxima vez que reisemos esta oc, ya tengamos este ingrediente en stock
+                    else:
+                        space += quantity
+
+                if all_in_stock:
+                    # Si tenemos todos los ingredientes, hacemos espacio en cocina y los enviamos a cocina para producir... Si no, esperamos que en la siguiente ejecucion ya los tengamos todos
+                    space_available = check_space(space, 'cocina')
+                    if not space_available:
+                        make_space_in_almacen("cocina", random.choice(['libre1', 'libre2']), space)
                     for ing in ingredients:
                         quantity = oc.amount * ing.volume_in_store
-                        real_stock = stock.get(str(ing.sku_ingredient.sku), 0)
-                        if real_stock < quantity: # Si no tenemos lo suficiente mandamos a producir del ingrediente
-                            all_in_stock = False
-                            los_que_faltan.append(ing.sku_ingredient.sku) # Con esto se espera que la proxima vez que reisemos esta oc, ya tengamos este ingrediente en stock
-                        else:
-                            space += quantity
+                        send_to_somewhere(str(ing.sku_ingredient.sku), quantity, almacenes["cocina"])
+                    response = make_a_product(oc.sku, oc.amount)
+                    response = receiveOc(oc.oc_id)
+                    oc.state='iniciada'
+                    oc.save()
 
-                    if all_in_stock:
-                        # Si tenemos todos los ingredientes, hacemos espacio en cocina y los enviamos a cocina para producir... Si no, esperamos que en la siguiente ejecucion ya los tengamos todos
-                        space_available = check_space(space, 'cocina')
-                        if not space_available:
-                            make_space_in_almacen("cocina", random.choice(['libre1', 'libre2']), space)
-                        for ing in ingredients:
-                            quantity = oc.amount * ing.volume_in_store
-                            send_to_somewhere(str(ing.sku_ingredient.sku), quantity, almacenes["cocina"])
-                        response = make_a_product(oc.sku, oc.amount)
-                        response = receiveOc(oc.oc_id)
-                        oc.state='iniciada'
-                        oc.save()
-
-                    else:
-                        create_middle_products(los_que_faltan)
+                else:
+                    create_middle_products(los_que_faltan)
 
 
 def watch_server():

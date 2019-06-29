@@ -126,7 +126,7 @@ def orders2(request):
             'aceptado': True,
             'despachado': True
         }
-        logger('b2b', "SKU: {} CANTIDAD: {} GRUPO: {} -> ACEPTADO".format(order['sku'], order['cantidad'], group_number))
+        logger('portal de pagos b2b', "SKU: {} CANTIDAD: {} GRUPO: {} -> ACEPTADO".format(order['sku'], order['cantidad'], group_number))
         return JsonResponse(request_response, safe=False, status=201)
     else:
         declineOc(req_oc, 'Bad body format')
