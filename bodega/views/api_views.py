@@ -101,35 +101,20 @@ def orders2(request):
     Request usado:
     {"almacenId": "asdasd", "sku": "012301", "cantidad": "10", "oc": ide}
     '''
+   
     req_body = get_request_body(request)
     req_sku = req_body['sku']
-    req_oc = req_body['oc']
-    order = getOc(req_oc)[0]
-    group_number = request.headers.get('group') if request.headers.get('group') else 'NoHeader'
-    try:
-        req_sku = int(req_sku)
-    except:
-        declineOc(req_oc, "SKU NO SE PUEDE TRANSFORMAR A ENTERO (INT)")
-        return JsonResponse({'error': "SKU NO SE PUEDE TRANSFORMAR A ENTERO (INT)"}, safe=False, status=400)
-
+    req_quantity = req_body['cantidad']
+    req_almacen = req_body['almacenId']
+    deadline = str(datetime.datetime.now() + timedelta(seconds=(60*80)))
+    oc_id = random.randint(0, 100000000000000)
+    deadline = datetime.datetime.strptime(deadline, '%Y-%m-%d %H:%M:%S.%f').replace(tzinfo=pytz.UTC)
     if validate_post_body(req_body):
-        new = PurchaseOrder.objects.create(oc_id=order['_id'], sku=order['sku'], client=order['cliente'], provider=order['proveedor'],
-                            amount=order['cantidad'], price=order['precioUnitario'], channel=order['canal'], deadline=order['fechaEntrega'])
-        new.save()
-        receiveOc(req_oc)
-        send_order_another_group(new.oc_id, req_body['almacenId'])
-        request_response = {
-            'sku': order['sku'],
-            'cantidad': order['cantidad'],
-            'almacenId': order['cliente'],
-            'grupoProveedor': 9,
-            'aceptado': True,
-            'despachado': True
-        }
-        logger('portal de pagos b2b', "SKU: {} CANTIDAD: {} GRUPO: {} -> ACEPTADO".format(order['sku'], order['cantidad'], group_number))
-        return JsonResponse(request_response, safe=False, status=201)
+        new = PurchaseOrder.objects.create(oc_id="pago_" + str(oc_id), sku=req_sku, client=req_almacen, provider=id_grupos['9'],
+                            amount=req_quantity, price=0, channel='b2b', deadline=deadline)
+        new.save()       
+        return JsonResponse({'success': 'req pago aceptada'}, safe=False, status=201)
     else:
-        declineOc(req_oc, 'Bad body format')
         return JsonResponse({'error': 'Bad body format'}, safe=False, status=400)
 
     return JsonResponse({'error': {'type': 'Method not implemented'}}, safe=False, status=501)
